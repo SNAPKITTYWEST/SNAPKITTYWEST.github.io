@@ -50,7 +50,7 @@
             // Bridge fetch — polls collectivekitty.com/api/bridge
             (async function bridgePoll() {
               try {
-                const r = await fetch('https://collectivekitty.com/api/bridge', {
+                const r = await fetch('https://sovereign-mesh.snapkittywest.workers.dev/api/bridge', {
                   signal: AbortSignal.timeout(4000)
                 });
                 if (r.ok) {
