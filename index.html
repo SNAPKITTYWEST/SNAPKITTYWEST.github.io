@@ -19,12 +19,56 @@
             <h1 class="glitch" data-text="SNAPKITTY WEST">SNAPKITTY WEST</h1>
             <p class="subtitle">Sovereign AI Infrastructure Built From Agents, Proofs, Receipts, and Runtime Discipline.</p>
             
+            <!-- Live OS Status Bridge -->
+            <div id="bridge-bar" style="display:flex;gap:16px;align-items:center;justify-content:center;margin-bottom:20px;flex-wrap:wrap;">
+              <span style="font-size:10px;color:#444;letter-spacing:.15em;">LIVE OS:</span>
+              <span id="b-status" style="font-size:10px;color:#333;font-family:monospace;">connecting...</span>
+              <span id="b-worm"   style="font-size:10px;color:#0a84ff;font-family:monospace;display:none"></span>
+              <span id="b-agents" style="font-size:10px;color:#00ff88;font-family:monospace;display:none"></span>
+              <span id="b-tier"   style="font-size:10px;color:#ffd700;font-family:monospace;display:none"></span>
+              <a href="https://collectivekitty.com" target="_blank" style="font-size:10px;color:#333;letter-spacing:.1em;">collectivekitty.com ↗</a>
+            </div>
+
+            <!-- Product Nav -->
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
+              <a href="router.html" style="background:#00ff8811;border:1px solid #00ff8833;color:#00ff88;padding:6px 14px;font-size:11px;font-family:monospace;letter-spacing:.08em;text-decoration:none;border-radius:2px;">⬡ SOVEREIGN ROUTER</a>
+              <a href="mylaw.html" style="background:#0a84ff11;border:1px solid #0a84ff33;color:#0a84ff;padding:6px 14px;font-size:11px;font-family:monospace;letter-spacing:.08em;text-decoration:none;border-radius:2px;">⚖ MYLAW</a>
+              <a href="carto.html" style="background:#bf5af211;border:1px solid #bf5af233;color:#bf5af2;padding:6px 14px;font-size:11px;font-family:monospace;letter-spacing:.08em;text-decoration:none;border-radius:2px;">🗺 CARTO ENGINE</a>
+              <a href="https://collectivekitty.com" target="_blank" style="background:#ffd70011;border:1px solid #ffd70033;color:#ffd700;padding:6px 14px;font-size:11px;font-family:monospace;letter-spacing:.08em;text-decoration:none;border-radius:2px;">⬡ COLLECTIVEKITTY</a>
+              <a href="https://github.com/SNAPKITTYWEST/mathlib5" target="_blank" style="background:#f9731611;border:1px solid #f9731633;color:#f97316;padding:6px 14px;font-size:11px;font-family:monospace;letter-spacing:.08em;text-decoration:none;border-radius:2px;">∑ MATHLIB5</a>
+            </div>
+
             <div class="hero-buttons">
                 <a href="https://github.com/SNAPKITTYWEST" class="btn btn-primary">View Repositories</a>
                 <a href="#agents" class="btn btn-secondary">Launch Dashboard</a>
                 <a href="https://github.com/SNAPKITTYWEST/snapkitty-redbook" class="btn btn-secondary">Read the Red Book</a>
                 <a href="#evidence" class="btn btn-accent">Evidence or Silence</a>
             </div>
+
+            <script>
+            // Bridge fetch — polls collectivekitty.com/api/bridge
+            (async function bridgePoll() {
+              try {
+                const r = await fetch('https://collectivekitty.com/api/bridge', {
+                  signal: AbortSignal.timeout(4000)
+                });
+                if (r.ok) {
+                  const d = await r.json();
+                  document.getElementById('b-status').textContent = '● LIVE';
+                  document.getElementById('b-status').style.color = '#00ff88';
+                  if (d.worm_head) { document.getElementById('b-worm').textContent = 'WORM:' + d.worm_head; document.getElementById('b-worm').style.display = 'inline'; }
+                  if (d.agents_active) { document.getElementById('b-agents').textContent = d.agents_active + ' AGENTS'; document.getElementById('b-agents').style.display = 'inline'; }
+                  if (d.tier) { document.getElementById('b-tier').textContent = 'TIER ' + d.tier; document.getElementById('b-tier').style.display = 'inline'; }
+                } else {
+                  document.getElementById('b-status').textContent = '○ OS offline';
+                }
+              } catch {
+                document.getElementById('b-status').textContent = '○ bridge pending';
+                document.getElementById('b-status').style.color = '#333';
+              }
+              setTimeout(bridgePoll, 30000);
+            })();
+            </script>
         </div>
     </section>
 

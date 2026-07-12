@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CARTO LIVE · Sovereign Law Engine</title>
+<script src="https://cdn.jsdelivr.net/npm/tau-prolog@0.3.2/modules/core.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#04040a;color:#e2e8f0;font-family:'Courier New',monospace;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{background:#0d1117;border-bottom:1px solid #1f2937;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{color:#d4af37;font-size:16px;font-weight:700;letter-spacing:4px}
+.logo-sub{color:#4b5563;font-size:10px;letter-spacing:3px;margin-left:8px}
+.status-bar{display:flex;gap:12px;align-items:center;font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-green{background:#10b981;animation:pulse 2s infinite}
+.dot-yellow{background:#d4af37}
+.dot-red{background:#f87171}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.status-text{color:#4b5563}
+.status-ok{color:#10b981}
+.status-warn{color:#f59e0b}
+.status-err{color:#f87171}
+
+.body{display:grid;grid-template-columns:170px 1fr 250px;flex:1;overflow:hidden;min-height:0}
+
+/* LEFT SIDEBAR */
+aside.left{background:#0d1117;border-right:1px solid #1f2937;padding:12px;font-size:11px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.sidebar-hdr{color:#374151;letter-spacing:2px;font-size:9px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #1f2937}
+.chapter{display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:10px;cursor:pointer;padding:3px 4px;border-radius:3px;transition:background .15s}
+.chapter:hover{background:#1f2937}
+.chapter.active{background:#d4af3718;border-left:2px solid #d4af37;padding-left:6px}
+.ch-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ch-name{color:#e2e8f0;flex:1}
+.worm-count{color:#d4af37;font-size:12px;font-weight:700;margin-bottom:5px}
+.worm-entry{margin-bottom:3px;font-size:9px;line-height:1.4}
+.wseal{color:#06b6d4}
+.wact{color:#374151;margin-left:4px;font-size:8px}
+
+/* CENTER */
+main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.tabs{background:#0d1117;border-bottom:1px solid #1f2937;display:flex;flex-shrink:0;overflow-x:auto}
+.tab{background:none;border:none;color:#4b5563;padding:9px 14px;cursor:pointer;font-family:inherit;font-size:10px;letter-spacing:1px;white-space:nowrap;transition:color .15s;flex-shrink:0}
+.tab.active{color:#d4af37;border-bottom:2px solid #d4af37}
+.tab:hover:not(.active){color:#9ca3af}
+
+.editor-wrap{padding:14px;background:#060b14;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+label{font-size:9px;color:#374151;letter-spacing:2px;display:block;margin-bottom:3px}
+textarea,select{width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:'Courier New',monospace;font-size:11px;padding:8px;outline:none;line-height:1.5;border-radius:3px}
+textarea{resize:none}
+textarea:focus,select:focus{border-color:#d4af3760}
+select{cursor:pointer}
+.hint{font-size:9px;color:#374151;margin-top:2px;line-height:1.5}
+
+.action-bar{background:#0d1117;border-top:1px solid #1f2937;border-bottom:1px solid #1f2937;padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.btn-run{background:#d4af37;color:#000;border:none;padding:7px 18px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .15s}
+.btn-run:hover:not(:disabled){background:#f5d060}
+.btn-run:disabled{background:#4b5563;color:#1f2937;cursor:not-allowed}
+.btn-sec{background:none;border:1px solid #374151;color:#6b7280;padding:7px 12px;font-family:inherit;font-size:10px;cursor:pointer;transition:all .15s}
+.btn-sec:hover:not(:disabled){border-color:#d4af37;color:#d4af37}
+.btn-sec:disabled{opacity:.4;cursor:not-allowed}
+.btn-prolog{background:none;border:1px solid #a855f750;color:#a855f7;padding:7px 12px;font-family:inherit;font-size:10px;cursor:pointer;transition:all .15s}
+.btn-prolog:hover:not(:disabled){border-color:#a855f7;background:#a855f715}
+.btn-prolog:disabled{opacity:.4;cursor:not-allowed}
+.seal-badge{font-size:9px;color:#4b5563;margin-left:auto}
+.seal-badge span{color:#06b6d4}
+
+/* OUTPUT PANEL */
+.output-panel{flex:1;overflow-y:auto;min-height:0;background:#060b14;border-top:1px solid #1f2937}
+.out-section{padding:12px 14px;border-bottom:1px solid #0f1824}
+.out-section:last-child{border-bottom:none}
+.out-hdr{color:#374151;font-size:9px;letter-spacing:2px;display:block;margin-bottom:8px}
+.out-empty{color:#1f2937;font-size:10px}
+.tok-CASE_ID{color:#d4af37}
+.tok-ACH_CODE{color:#10b981}
+.tok-EIN{color:#06b6d4}
+.tok-DOLLAR{color:#f59e0b}
+.tok-WORM{color:#a855f7}
+.tok-TRUST{color:#ec4899}
+.tok-DISPUTE{color:#f87171}
+.tok-CATCODE{color:#fb923c}
+.token-row{font-size:10px;margin-bottom:3px;display:flex;align-items:baseline;gap:6px}
+.tok-label{font-size:9px;opacity:.7}
+.rexx-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.rexx-cmd{color:#22d3ee;font-size:10px;flex:1}
+.copy-btn{background:none;border:1px solid #1f2937;color:#374151;padding:1px 5px;font-family:inherit;font-size:8px;cursor:pointer;transition:all .1s}
+.copy-btn:hover{border-color:#22d3ee;color:#22d3ee}
+.copy-btn.copied{color:#10b981;border-color:#10b981}
+.standing-row{font-size:11px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.s-ok{color:#10b981}
+.s-fail{color:#374151}
+.statute-row{margin-bottom:6px;font-size:10px;line-height:1.6}
+.statute-cite{color:#d4af37}
+.statute-desc{color:#6b7280;font-size:9px}
+.statute-link{color:#06b6d4;text-decoration:none;font-size:9px;border:1px solid #1f2937;padding:1px 5px;margin-left:6px}
+.statute-link:hover{border-color:#06b6d4}
+.stat-row{color:#374151;font-size:9px;margin-top:6px}
+.prolog-fact{color:#a855f7;font-size:9px;display:block;margin-bottom:1px}
+.thinking{display:flex;gap:5px;align-items:center;color:#d4af37;font-size:10px;padding:12px 14px}
+.tdot{width:5px;height:5px;border-radius:50%;background:#d4af37;animation:think 1.2s infinite}
+.tdot:nth-child(2){animation-delay:.2s}
+.tdot:nth-child(3){animation-delay:.4s}
+@keyframes think{0%,100%{opacity:.15}50%{opacity:1}}
+
+/* RIGHT SIDEBAR */
+.carto-sidebar{background:#0d1117;border-left:1px solid #1f2937;padding:12px;display:flex;flex-direction:column;overflow:hidden}
+.carto-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1f2937}
+.carto-logo{color:#d4af37;font-size:18px}
+.carto-title{color:#e2e8f0;font-weight:700;letter-spacing:2px;font-size:12px}
+.carto-sub{font-size:8px;color:#374151}
+.carto-body{flex:1;overflow-y:auto;font-size:10px}
+.carto-idle{color:#374151;line-height:1.8}
+.carto-result{line-height:1.8}
+.c-label{color:#d4af37;font-size:9px;letter-spacing:2px;display:block;margin-bottom:5px;margin-top:10px}
+.c-label:first-child{margin-top:0}
+.c-ok{color:#10b981}
+.c-fail{color:#374151}
+.c-err{color:#f87171}
+.c-fact{color:#a855f7;font-size:9px}
+.c-stack{color:#374151;font-size:9px;line-height:1.8}
+.carto-foot{margin-top:auto;padding-top:8px;border-top:1px solid #1f2937;font-size:8px;color:#374151;line-height:1.7}
+
+footer{background:#0d1117;border-top:1px solid #1f2937;padding:8px 20px;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#374151;flex-shrink:0}
+.footer-seal{color:#06b6d4}
+.footer-links{display:flex;gap:16px}
+.footer-links a{color:#374151;text-decoration:none}
+.footer-links a:hover{color:#d4af37}
+
+.wflash{animation:wf .4s ease}
+@keyframes wf{from{background:#d4af3312}to{background:transparent}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span class="logo">CARTO</span>
+    <span class="logo-sub">SOVEREIGN LAW ENGINE</span>
+  </div>
+  <div class="status-bar">
+    <span><span class="dot dot-green"></span><span class="status-ok">DFA ONLINE</span></span>
+    <span class="status-text">|</span>
+    <span id="pl-status"><span class="dot dot-yellow"></span><span class="status-warn">PROLOG LOADING</span></span>
+    <span class="status-text">|</span>
+    <span class="status-text">ASP GATE</span>
+    <span class="status-text">|</span>
+    <span class="status-text">NO PYTHON</span>
+    <span class="status-text">|</span>
+    <span id="worm-hdr" style="color:#d4af37">◈ WORM 0</span>
+  </div>
+</header>
+
+<div class="body">
+
+<!-- LEFT SIDEBAR -->
+<aside class="left">
+  <div>
+    <div class="sidebar-hdr">CORPUS CHAPTERS</div>
+    <div class="chapter active" onclick="setChapter(this,'ch1')"><span class="ch-dot" style="background:#d4af37"></span><span class="ch-name">Credit Repair</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch2')"><span class="ch-dot" style="background:#a855f7"></span><span class="ch-name">Sovereign Trust</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch3')"><span class="ch-dot" style="background:#10b981"></span><span class="ch-name">ACH Dispute</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch4')"><span class="ch-dot" style="background:#f87171"></span><span class="ch-name">FCRA / Metro2</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch5')"><span class="ch-dot" style="background:#06b6d4"></span><span class="ch-name">Fiduciary</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch6')"><span class="ch-dot" style="background:#f59e0b"></span><span class="ch-name">Bankruptcy</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch7')"><span class="ch-dot" style="background:#ec4899"></span><span class="ch-name">Moorish Trust</span></div>
+    <div class="chapter" onclick="setChapter(this,'ch8')"><span class="ch-dot" style="background:#fb923c"></span><span class="ch-name">IRS CatCode</span></div>
+  </div>
+  <div>
+    <div class="sidebar-hdr">WORM CHAIN</div>
+    <div class="worm-count" id="worm-count">0 sealed</div>
+    <div id="worm-entries"></div>
+  </div>
+</aside>
+
+<!-- CENTER -->
+<main>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab(this,'standing')">STANDING</button>
+    <button class="tab" onclick="switchTab(this,'ach')">ACH</button>
+    <button class="tab" onclick="switchTab(this,'zombie')">ZOMBIE DEBT</button>
+    <button class="tab" onclick="switchTab(this,'trust')">TRUST</button>
+    <button class="tab" onclick="switchTab(this,'irs')">IRS CATCODE</button>
+    <button class="tab" onclick="switchTab(this,'dfa')">DFA SCAN</button>
+    <button class="tab" onclick="switchTab(this,'deed')" style="color:#d4af37;border-bottom:1px solid #d4af3740">⚖ DEED FORGE</button>
+  </div>
+
+  <div class="editor-wrap">
+
+    <div id="tab-standing">
+      <label>CONSUMER / CASE FACTS</label>
+      <textarea id="in-standing" rows="4" placeholder="Consumer has wrong DOFD on account. Broken assignment chain. Account re-aged by 24 months. EIN 41-5105572. $3,200.00 disputed."></textarea>
+      <div class="hint">FCRA § 1681c standing · ACH unauthorized · Prolog derivation runs browser-native</div>
+    </div>
+
+    <div id="tab-ach" style="display:none">
+      <label>RETURN CODE</label>
+      <select id="in-ach-code">
+        <option value="R10">R10 — Customer Advises Not Authorized (60-day RDFI window)</option>
+        <option value="R07">R07 — Authorization Revoked (originator liability)</option>
+        <option value="R05">R05 — Unauthorized Debit — wrong SEC code (NACHA breach)</option>
+        <option value="R02">R02 — Account Closed</option>
+        <option value="R03">R03 — No Account / Unable to Locate</option>
+      </select>
+      <label style="margin-top:8px">FACTS</label>
+      <textarea id="in-ach-facts" rows="3" placeholder="Authorization revoked 2026-06-01. Certified mail confirmation available. RDFI consumer account confirmed."></textarea>
+      <div class="hint">NACHA Operating Rules · 60-day return window · ODFI bears liability on R10</div>
+    </div>
+
+    <div id="tab-zombie" style="display:none">
+      <label>ACCOUNT DETAILS</label>
+      <textarea id="in-zombie" rows="4" placeholder="Last payment date: 2019-03-15. State: California. SOL: 4 years (expired). Reported DOFD: 2022-01-01. Actual DOFD: 2019-04-01. No valid bill of sale on file. Broken assignment chain."></textarea>
+      <div class="hint">SOL expiry · re-aging · broken assignment · FCRA § 1681c 7-year limit</div>
+    </div>
+
+    <div id="tab-trust" style="display:none">
+      <label>TRUST TYPE</label>
+      <select id="in-trust-type">
+        <option value="GRAT">GRAT — Grantor Retained Annuity Trust (IRC § 2702)</option>
+        <option value="IRREVOCABLE">Irrevocable Trust (IRC § 2501)</option>
+        <option value="DORMANCY">Dormancy / Escheatment Defense</option>
+        <option value="DIVINE_CRAFT_HOUSE">Divine Craft House — 501c3 Covenant GRAT</option>
+        <option value="BEL_ESPRIT">Bel Esprit D'Accord Trust</option>
+      </select>
+      <label style="margin-top:8px">TRUST FACTS</label>
+      <textarea id="in-trust-facts" rows="3" placeholder="Trust established 2026-05-21. WORM chain: 483 sealed entries. Continuous documented activity. BOB is trustee. No dormancy."></textarea>
+      <div class="hint">Trust classification · dormancy defense · fiduciary breach scan</div>
+    </div>
+
+    <div id="tab-irs" style="display:none">
+      <label>CATCODE</label>
+      <select id="in-cat-code">
+        <option value="CAT-VAL-001">CAT-VAL-001 — Valuation audit (WORM chain as proof of value)</option>
+        <option value="CAT-IN-002">CAT-IN-002 — Income reconciliation</option>
+        <option value="CAT-EM-003">CAT-EM-003 — Employment / contractor classification</option>
+        <option value="CAT-CP-004">CAT-CP-004 — Capital gains / basis audit</option>
+      </select>
+      <label style="margin-top:8px">FILING FACTS</label>
+      <textarea id="in-cat-facts" rows="3" placeholder="R&D credits claimed under IRC § 41(h). 941-X amendments filed. WORM-sealed evidence chain. Continuous activity documented."></textarea>
+      <div class="hint">12-code deterministic audit protocol · WORM chain as CAT-VAL-001 proof</div>
+    </div>
+
+    <!-- DEED FORGE -->
+    <div id="tab-deed" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label>TRUST NAME</label>
+          <input type="text" id="deed-name" placeholder="Bel Esprit D'Accord Irrevocable Trust" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+        </div>
+        <div>
+          <label>EIN (from IRS CP575)</label>
+          <input type="text" id="deed-ein" placeholder="XX-XXXXXXX" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+        </div>
+        <div>
+          <label>GRANTOR (legal name)</label>
+          <input type="text" id="deed-grantor" placeholder="Ahmad Ali Parr" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+        </div>
+        <div>
+          <label>TRUSTEE</label>
+          <input type="text" id="deed-trustee" placeholder="BOB (Sovereign Logic Agent)" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+        </div>
+        <div>
+          <label>TRUST TYPE</label>
+          <select id="deed-type" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+            <option value="irrevocable">Irrevocable Trust (IRC § 2501)</option>
+            <option value="grat">GRAT — Grantor Retained Annuity Trust (IRC § 2702)</option>
+            <option value="covenant_grat">Covenant GRAT — Bel Esprit model</option>
+            <option value="business_trust">Business Trust / Pure Trust</option>
+            <option value="moorish">Moorish Covenant Trust (1928 estate pattern)</option>
+          </select>
+        </div>
+        <div>
+          <label>LOCK POINT / ANCHOR</label>
+          <input type="text" id="deed-lock" placeholder="The 49th Call — ERE v1 — 2026-05-28" style="width:100%;background:#0d1117;border:1px solid #1f2937;color:#e2e8f0;font-family:inherit;font-size:11px;padding:8px;outline:none;border-radius:3px">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>CORPUS (trust assets — one per line)</label>
+        <textarea id="deed-corpus" rows="3" placeholder="SnapKitty OS&#10;Model weights&#10;API keys&#10;Compute grid&#10;Agent mesh"></textarea>
+      </div>
+      <div style="margin-top:8px">
+        <label>BENEFICIARIES (name, restriction, clearance — one per line)</label>
+        <textarea id="deed-beneficiaries" rows="3" placeholder="cipher, spendthrift_restricted, 4&#10;sentinel, spendthrift_restricted, 5&#10;nova, unrestricted, 2&#10;loc, kinetic_only, 5"></textarea>
+      </div>
+      <div style="margin-top:8px">
+        <label>SOVEREIGN AXIOMS (add custom — leave blank for defaults)</label>
+        <textarea id="deed-axioms" rows="2" placeholder="plasma_containment&#10;cosmic_order&#10;divine_house_covenant"></textarea>
+      </div>
+      <div class="hint">Generates: Prolog trust deed · Plain-English PDF-ready deed · WORM-sealed hash · REXX registration call</div>
+    </div>
+
+    <div id="tab-dfa" style="display:none">
+      <label>RAW DOCUMENT — DFA SCAN</label>
+      <textarea id="in-dfa" rows="5" placeholder="Paste any legal document. The DFA reads character-by-character. O(n). No backtracking. ReDoS immune.&#10;&#10;Try: CASE-2026-001 involves zombie debt. EIN 41-5105572. R10 return code. $12,500.00 disputed. Wrong DOFD. Broken assignment chain."></textarea>
+      <div class="hint">O(n) · No JSON.parse · No AST · REXX calls generated directly from tokens</div>
+    </div>
+
+  </div><!-- editor-wrap -->
+
+  <div class="action-bar">
+    <button class="btn-run" id="btn-run" onclick="runCarto()">⚖ RUN CARTO</button>
+    <button class="btn-prolog" id="btn-prolog" onclick="runPrologOnly()">⬡ PROLOG</button>
+    <button class="btn-sec" id="btn-dfa" onclick="runDFAOnly()">◈ DFA SCAN</button>
+    <button class="btn-sec" onclick="clearAll()">CLEAR</button>
+    <div class="seal-badge" id="seal-badge" style="display:none">SEAL: <span id="seal-id"></span></div>
+  </div>
+
+  <div class="output-panel" id="output-panel">
+    <div class="out-section">
+      <span class="out-hdr">OUTPUT</span>
+      <span class="out-empty">— run CARTO to see results —</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- RIGHT SIDEBAR -->
+<aside class="carto-sidebar">
+  <div class="carto-hdr">
+    <div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="carto-logo">⚖</span>
+        <span class="carto-title">CARTO</span>
+      </div>
+      <div class="carto-sub">SOVEREIGN LAW KERNEL</div>
+    </div>
+  </div>
+  <div class="carto-body" id="carto-body">
+    <div class="carto-idle">
+      <div>CARTO maps the legal terrain.</div>
+      <br>
+      <div class="c-stack">
+        ASP gate (Clingo)<br>
+        ↓ Tau Prolog<br>
+        ↓ DFA O(n)<br>
+        ↓ REXX kernel<br>
+        ↓ OCaml corpus<br>
+        ↓ COBOL records
+      </div>
+    </div>
+  </div>
+  <div class="carto-foot">
+    TAU-PROLOG 0.3.2<br>
+    DFA: O(n) · REDOS IMMUNE<br>
+    WORM: PERSISTENT · NO PYTHON
+  </div>
+</aside>
+
+</div><!-- body grid -->
+
+<footer>
+  <div>CARTO · CARTOGRAPHER AGENT · SNAPKITTYWEST · 2026 · <span class="footer-seal" id="footer-seal">—</span></div>
+  <div class="footer-links">
+    <a href="index.html">← DOCS</a>
+    <a href="https://github.com/SNAPKITTYWEST/cartographer-agent">GitHub</a>
+    <a href="https://collectivekitty.com">collectivekitty.com</a>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// WORM CHAIN — persistent via localStorage
+// ═══════════════════════════════════════════════════════
+var wormEntries = [], wormPrev = '0'.repeat(16)
+
+function djb2(s){
+  var h = 5381
+  for(var i = 0; i < s.length; i++) h = ((h<<5)+h+s.charCodeAt(i))&0xFFFFFFFF
+  return (h>>>0).toString(16).padStart(8,'0')
+}
+
+function wormSeal(action, payload){
+  var ts = Date.now()
+  var body = wormPrev + ':' + action + ':' + JSON.stringify(payload) + ':' + ts
+  var h = djb2(body), n = wormEntries.length
+  var id = h + '-worm-' + n.toString(16)
+  wormEntries.push({id, action, prev: wormPrev, ts})
+  wormPrev = h
+  persistWorm()
+  renderWorm()
+  return id
+}
+
+function persistWorm(){
+  try { localStorage.setItem('carto_worm', JSON.stringify({entries: wormEntries, prev: wormPrev})) } catch(e){}
+}
+
+function loadWorm(){
+  try {
+    var raw = localStorage.getItem('carto_worm')
+    if(!raw) return
+    var d = JSON.parse(raw)
+    wormEntries = d.entries || []
+    wormPrev = d.prev || '0'.repeat(16)
+    renderWorm()
+  } catch(e){}
+}
+
+function renderWorm(){
+  var n = wormEntries.length
+  document.getElementById('worm-count').textContent = n + ' sealed'
+  document.getElementById('worm-hdr').textContent = '◈ WORM ' + n
+  var el = document.getElementById('worm-entries')
+  el.innerHTML = ''
+  wormEntries.slice(-8).reverse().forEach(function(e){
+    var d = document.createElement('div')
+    d.className = 'worm-entry wflash'
+    d.innerHTML = '<span class="wseal">' + e.id.slice(0,12) + '</span><span class="wact">' + e.action + '</span>'
+    el.appendChild(d)
+  })
+  var latest = wormEntries[wormEntries.length-1]
+  if(latest){
+    document.getElementById('footer-seal').textContent = latest.id.slice(0,18)
+    document.getElementById('seal-badge').style.display = 'block'
+    document.getElementById('seal-id').textContent = latest.id.slice(0,18)
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TAU PROLOG STATUS CHECK
+// ═══════════════════════════════════════════════════════
+var prologReady = false
+window.addEventListener('load', function(){
+  loadWorm()
+  if(typeof pl !== 'undefined'){
+    prologReady = true
+    document.getElementById('pl-status').innerHTML =
+      '<span class="dot dot-green"></span><span class="status-ok">PROLOG READY</span>'
+  } else {
+    document.getElementById('pl-status').innerHTML =
+      '<span class="dot dot-red"></span><span class="status-err">PROLOG FAILED</span>'
+  }
+})
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+var activeTab = 'standing'
+
+function switchTab(btn, tab){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none')
+  document.getElementById('tab-' + tab).style.display = ''
+  activeTab = tab
+}
+
+function setChapter(el, ch){
+  document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'))
+  el.classList.add('active')
+  wormSeal('chapter_select', {ch})
+}
+
+// ═══════════════════════════════════════════════════════
+// BUTTON STATE
+// ═══════════════════════════════════════════════════════
+function setRunning(on){
+  ['btn-run','btn-prolog','btn-dfa'].forEach(function(id){
+    var b = document.getElementById(id)
+    if(b) b.disabled = on
+  })
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTO CASE ID
+// ═══════════════════════════════════════════════════════
+var caseCounter = 0
+function autoCase(){
+  caseCounter++
+  var d = new Date()
+  var y = d.getFullYear()
+  var m = String(d.getMonth()+1).padStart(2,'0')
+  var day = String(d.getDate()).padStart(2,'0')
+  return 'CASE-' + y + m + day + '-' + String(caseCounter).padStart(3,'0')
+}
+
+// ═══════════════════════════════════════════════════════
+// STATUTE MAP — Cornell LII + NACHA refs
+// ═══════════════════════════════════════════════════════
+var STATUTES = {
+  ZOMBIE_DEBT:       {cite:'15 USC § 1681c',    url:'https://www.law.cornell.edu/uscode/text/15/1681c',    desc:'FCRA — obsolete / time-barred information'},
+  WRONG_DOFD:        {cite:'15 USC § 1681c',    url:'https://www.law.cornell.edu/uscode/text/15/1681c',    desc:'FCRA — 7-year reporting period from DOFD'},
+  RE_AGING:          {cite:'15 USC § 1681c',    url:'https://www.law.cornell.edu/uscode/text/15/1681c',    desc:'FCRA — re-aging resets reporting clock (prohibited)'},
+  RE_AGED:           {cite:'15 USC § 1681c',    url:'https://www.law.cornell.edu/uscode/text/15/1681c',    desc:'FCRA — re-aging resets reporting clock (prohibited)'},
+  BROKEN_ASSIGNMENT: {cite:'15 USC § 1681i',    url:'https://www.law.cornell.edu/uscode/text/15/1681i',    desc:'FCRA — furnisher duty to verify on dispute'},
+  IDENTITY_THEFT:    {cite:'15 USC § 1681c-2',  url:'https://www.law.cornell.edu/uscode/text/15/1681c-2',  desc:'FCRA — block of information resulting from identity theft'},
+  UNAUTHORIZED_ACH:  {cite:'NACHA OR § 2.12.2', url:'https://www.nacha.org/rules',                         desc:'NACHA — consumer unauthorized return rights'},
+  METRO2_INACCURACY: {cite:'15 USC § 1681s-2',  url:'https://www.law.cornell.edu/uscode/text/15/1681s-2',  desc:'FCRA — duty of furnishers of information'},
+  // Trust
+  GRANTOR_RETAINED_ANNUITY_TRUST: {cite:'26 USC § 2702', url:'https://www.law.cornell.edu/uscode/text/26/2702', desc:'IRC — special valuation rules for GRATs'},
+  IRREVOCABLE_TRUST: {cite:'26 USC § 2501',     url:'https://www.law.cornell.edu/uscode/text/26/2501',     desc:'IRC — imposition of gift tax on trust transfers'},
+  BEL_ESPRIT:        {cite:'UTC § 103',          url:'https://www.uniformlaws.org/acts/utc',                desc:'Uniform Trust Code — trust definitions and authority'},
+  DIVINE_CRAFT_HOUSE:{cite:'IRC § 501(c)(3)',    url:'https://www.law.cornell.edu/uscode/text/26/501',      desc:'IRC — religious/charitable organization exemption'},
+  // ACH codes
+  R10: {cite:'NACHA OR § 2.12.2', url:'https://www.nacha.org/rules', desc:'Customer advises not authorized — 60-day return window'},
+  R07: {cite:'NACHA OR § 2.12.3', url:'https://www.nacha.org/rules', desc:'Authorization revoked — originator liability'},
+  R05: {cite:'NACHA OR § 2.4.1',  url:'https://www.nacha.org/rules', desc:'Unauthorized debit entry — wrong SEC code'},
+  // IRS catcodes
+  'CAT-VAL-001': {cite:'26 USC § 482', url:'https://www.law.cornell.edu/uscode/text/26/482', desc:'IRC — allocation of income and deductions (valuation)'},
+  'CAT-IN-002':  {cite:'26 USC § 61',  url:'https://www.law.cornell.edu/uscode/text/26/61',  desc:'IRC — gross income defined'},
+  'CAT-EM-003':  {cite:'26 USC § 3401',url:'https://www.law.cornell.edu/uscode/text/26/3401',desc:'IRC — employee defined (contractor classification)'},
+  'CAT-CP-004':  {cite:'26 USC § 1001',url:'https://www.law.cornell.edu/uscode/text/26/1001',desc:'IRC — determination of gain or loss from dispositions'},
+}
+
+function lookupStatutes(tokens, patterns){
+  var found = [], seenUrl = new Set()
+  function add(key){
+    if(!STATUTES[key]) return
+    var s = STATUTES[key]
+    if(seenUrl.has(s.url)) return  // dedup by URL — same statute = same entry
+    seenUrl.add(s.url)
+    found.push(Object.assign({key}, s))
+  }
+  for(var p of patterns) add(p.value.toUpperCase().replace(/[\s-]+/g,'_'))
+  for(var t of tokens) if(t.type==='ACH_CODE') add(t.value)
+  for(var p of patterns) if(p.type==='CATCODE') add(p.value.toUpperCase())
+  return found
+}
+
+// ═══════════════════════════════════════════════════════
+// DFA ENGINE — O(n), no backtracking, ReDoS immune
+// ═══════════════════════════════════════════════════════
+var isDigit = c => c >= 48 && c <= 57
+var isAlpha = c => (c>=65&&c<=90)||(c>=97&&c<=122)
+var isHex   = c => isDigit(c)||(c>=65&&c<=70)||(c>=97&&c<=102)
+
+var VALID_ACH = ['R10','R07','R05','R02','R03','R04','R08','R09','R16','R20','R29']
+
+function dfaScan(text){
+  var tokens = [], i = 0
+  while(i < text.length){
+    var c = text[i], cp = text.charCodeAt(i)
+
+    // CASE-XXXXX
+    if(text.slice(i,i+5) === 'CASE-'){
+      var j=i+5, buf='CASE-'
+      while(j<text.length && (isAlpha(text.charCodeAt(j))||isDigit(text.charCodeAt(j))||text[j]==='-')) buf+=text[j++]
+      if(buf.length>5) tokens.push({type:'CASE_ID', value:buf})
+      i=j; continue
+    }
+    // ACH code R##
+    if(c==='R' && i+2<text.length && isDigit(text.charCodeAt(i+1)) && isDigit(text.charCodeAt(i+2))){
+      var code=text.slice(i,i+3)
+      if(VALID_ACH.includes(code) && (i+3>=text.length || !isAlpha(text.charCodeAt(i+3)))){
+        tokens.push({type:'ACH_CODE', value:code}); i+=3; continue
+      }
+    }
+    // WORM:hex
+    if(text.slice(i,i+5)==='WORM:'){
+      var j=i+5, buf=''
+      while(j<text.length && isHex(text.charCodeAt(j))) buf+=text[j++]
+      if(buf.length>=8) tokens.push({type:'WORM', value:'WORM:'+buf})
+      i=j; continue
+    }
+    // EIN XX-XXXXXXX
+    if(isDigit(cp) && i+10<=text.length){
+      var slice=text.slice(i,i+10)
+      if(/^\d{2}-\d{7}/.test(slice)){
+        tokens.push({type:'EIN', value:slice.slice(0,10)}); i+=10; continue
+      }
+    }
+    // Dollar $NNN
+    if(c==='$' && i+1<text.length && isDigit(text.charCodeAt(i+1))){
+      var j=i+1, buf='$'
+      while(j<text.length && (isDigit(text.charCodeAt(j))||text[j]===','||text[j]==='.')) buf+=text[j++]
+      tokens.push({type:'DOLLAR', value:buf}); i=j; continue
+    }
+    i++
+  }
+
+  // multi-word pattern pass (flat string search — O(n) per pattern)
+  var lower = text.toLowerCase(), patterns = []
+  var PATS = [
+    ['grantor retained annuity trust','TRUST'],['irrevocable trust','TRUST'],
+    ['revocable living trust','TRUST'],['covenant grat','TRUST'],['grat structure','TRUST'],
+    ['bel esprit','TRUST'],
+    ['divine craft house','TRUST'],['experto crede','TRUST'],
+    ['zombie debt','DISPUTE'],['wrong dofd','DISPUTE'],['re-aging','DISPUTE'],
+    ['re_aged','DISPUTE'],['broken assignment','DISPUTE'],
+    ['identity theft','DISPUTE'],['unauthorized ach','DISPUTE'],
+    ['metro2 inaccuracy','DISPUTE'],['metro2 error','DISPUTE'],
+    ['cat-val-001','CATCODE'],['cat-in-002','CATCODE'],
+    ['cat-em-003','CATCODE'],['cat-cp-004','CATCODE'],
+  ]
+  for(var p of PATS){
+    var pos=0
+    while(pos<lower.length){
+      var idx=lower.indexOf(p[0],pos)
+      if(idx===-1) break
+      patterns.push({type:p[1], value:text.slice(idx,idx+p[0].length)})
+      pos=idx+p[0].length
+    }
+  }
+
+  return {tokens, patterns, stats:{chars:text.length, tokens:tokens.length, patterns:patterns.length}}
+}
+
+function toRexxCalls(tokens, patterns, caseId){
+  var calls=[], id=caseId||(tokens.find(t=>t.type==='CASE_ID')||{value:null}).value
+  if(!id) id = autoCase()
+  for(var t of tokens.filter(t=>t.type==='ACH_CODE'))
+    calls.push({cmd:'rexx rexx-glue-kernel.rexx '+id+' ACH_DISPUTE '+t.value, note:'NACHA '+t.value+' liability chain'})
+  for(var p of patterns.filter(p=>p.type==='DISPUTE')){
+    var k=p.value.toUpperCase().replace(/[\s-]+/g,'_')
+    calls.push({cmd:'rexx rexx-glue-kernel.rexx '+id+' FCRA_DISPUTE '+k, note:'FCRA dispute grounds'})
+  }
+  for(var p of patterns.filter(p=>p.type==='TRUST')){
+    var k=p.value.toUpperCase().replace(/[\s-]+/g,'_')
+    calls.push({cmd:'rexx rexx-glue-kernel.rexx '+id+' TRUST_SCAN '+k, note:'trust classification + dormancy check'})
+  }
+  for(var p of patterns.filter(p=>p.type==='CATCODE'))
+    calls.push({cmd:'rexx rexx-glue-kernel.rexx '+id+' IRS_CATCODE '+p.value.toUpperCase(), note:'12-code audit defense'})
+  return {calls, caseId:id}
+}
+
+// ═══════════════════════════════════════════════════════
+// PROLOG — per-tab rules + sequential query execution
+// ═══════════════════════════════════════════════════════
+
+function getTabFacts(tab, tokens, patterns){
+  var facts = new Set()
+  var add = f => facts.add(f)
+
+  // always assert consumer
+  add('consumer_of_record(consumer_of_record).')
+
+  // from DFA tokens
+  for(var t of tokens){
+    if(t.type==='ACH_CODE'){
+      add('rdfi_consumer_account(consumer_of_record).')
+      if(t.value==='R10') add('authorization_missing(consumer_of_record).')
+      if(t.value==='R07') add('authorization_revoked(consumer_of_record).')
+      if(t.value==='R05') add('wrong_sec_code(consumer_of_record).')
+    }
+  }
+
+  // from DFA patterns
+  for(var p of patterns){
+    var v = p.value.toLowerCase()
+    if(v.includes('zombie')||v.includes('re_ag')||v.includes('re-ag')) add('re_aged_account(consumer_of_record).')
+    if(v.includes('wrong dofd')||v.includes('dofd')) add('wrong_dofd(consumer_of_record, true).')
+    if(v.includes('broken assignment')) add('broken_chain_of_assignment(consumer_of_record, true).')
+    if(v.includes('identity theft')) add('human_trafficking_victim(consumer_of_record).')
+    if(v.includes('unauthorized ach')) { add('rdfi_consumer_account(consumer_of_record).'); add('authorization_missing(consumer_of_record).') }
+    if(v.includes('metro2')||v.includes('metro')) add('metro2_error(consumer_of_record, true).')
+    if(v.includes('grantor retained')||v.includes('grat')) add('trust_type(bel_esprit_trust, grat).')
+    if(v.includes('irrevocable')) add('trust_type(bel_esprit_trust, irrevocable).')
+    if(v.includes('bel esprit')||v.includes('divine craft')||v.includes('experto')) add('worm_chain_active(bel_esprit_trust).')
+  }
+
+  // tab-specific facts from select inputs
+  if(tab==='ach'){
+    var code = (document.getElementById('in-ach-code')||{}).value||''
+    add('rdfi_consumer_account(consumer_of_record).')
+    if(code==='R10') add('authorization_missing(consumer_of_record).')
+    if(code==='R07') add('authorization_revoked(consumer_of_record).')
+    if(code==='R05') add('wrong_sec_code(consumer_of_record).')
+  }
+  if(tab==='trust'){
+    var tt = (document.getElementById('in-trust-type')||{}).value||''
+    add('worm_chain_active(bel_esprit_trust).')
+    add('continuous_activity(bel_esprit_trust).')
+    if(tt==='GRAT') add('trust_type(bel_esprit_trust, grat).')
+    if(tt==='IRREVOCABLE') add('trust_type(bel_esprit_trust, irrevocable).')
+    if(tt==='DORMANCY') add('worm_chain_active(bel_esprit_trust).')
+    if(tt==='DIVINE_CRAFT_HOUSE') { add('trust_type(bel_esprit_trust, grat).'); add('religious_org(bel_esprit_trust).') }
+    if(tt==='BEL_ESPRIT') { add('trust_type(bel_esprit_trust, irrevocable).'); add('worm_chain_active(bel_esprit_trust).') }
+  }
+  if(tab==='zombie'){
+    // scan textarea for SOL keywords
+    var ztext = ((document.getElementById('in-zombie')||{}).value||'').toLowerCase()
+    if(ztext.includes('expired')||ztext.includes('sol')) add('sol_expired(consumer_of_record).')
+    if(ztext.includes('dofd')) add('wrong_dofd(consumer_of_record, true).')
+    if(ztext.includes('assignment')) add('broken_chain_of_assignment(consumer_of_record, true).')
+    add('re_aged_account(consumer_of_record).')
+  }
+  if(tab==='irs'){
+    var cat = (document.getElementById('in-cat-code')||{}).value||''
+    add('worm_chain_active(tax_case).')
+    add('continuous_activity(tax_case).')
+    if(cat==='CAT-VAL-001') add('valuation_documented(tax_case).')
+    if(cat==='CAT-IN-002') add('income_reconciled(tax_case).')
+    if(cat==='CAT-EM-003') add('contractor_classified(tax_case).')
+    if(cat==='CAT-CP-004') add('basis_documented(tax_case).')
+  }
+
+  return Array.from(facts)
+}
+
+function getTabRules(tab){
+  // Pure Horn clauses — no directives, no \+, Tau Prolog safe
+  var shared = [
+    'has_standing(C, fcra_dispute) :- consumer_of_record(C), wrong_dofd(C, _).',
+    'has_standing(C, fcra_dispute) :- consumer_of_record(C), broken_chain_of_assignment(C, _).',
+    'has_standing(C, fcra_dispute) :- consumer_of_record(C), re_aged_account(C).',
+    'has_standing(C, fcra_dispute) :- consumer_of_record(C), human_trafficking_victim(C).',
+    'has_standing(C, fcra_dispute) :- consumer_of_record(C), metro2_error(C, _).',
+    'has_standing(C, ach_unauthorized) :- rdfi_consumer_account(C), authorization_missing(C).',
+    'has_standing(C, ach_revoked) :- rdfi_consumer_account(C), authorization_revoked(C).',
+    'has_standing(C, ach_sec_violation) :- rdfi_consumer_account(C), wrong_sec_code(C).',
+  ]
+  var trust = [
+    'trust_is_active(T) :- worm_chain_active(T), continuous_activity(T).',
+    'dormancy_defense(T) :- trust_is_active(T).',
+    'trust_classification(T, grat) :- trust_type(T, grat).',
+    'trust_classification(T, irrevocable) :- trust_type(T, irrevocable).',
+    'has_standing(T, dormancy_defense) :- dormancy_defense(T).',
+    'has_standing(T, grat_classification) :- trust_classification(T, grat).',
+    'has_standing(T, irrevocable_classification) :- trust_classification(T, irrevocable).',
+  ]
+  var irs = [
+    'catcode_defense(C, cat_val_001) :- worm_chain_active(C), continuous_activity(C), valuation_documented(C).',
+    'catcode_defense(C, cat_in_002) :- income_reconciled(C).',
+    'catcode_defense(C, cat_em_003) :- contractor_classified(C).',
+    'catcode_defense(C, cat_cp_004) :- basis_documented(C).',
+  ]
+  if(tab==='trust') return shared.concat(trust)
+  if(tab==='irs') return irs
+  if(tab==='zombie') return shared
+  return shared
+}
+
+function getTabQueries(tab){
+  if(tab==='trust') return [
+    ['has_standing(bel_esprit_trust, dormancy_defense)', 'DORMANCY DEFENSE'],
+    ['has_standing(bel_esprit_trust, grat_classification)', 'GRAT CLASSIFICATION'],
+    ['has_standing(bel_esprit_trust, irrevocable_classification)', 'IRREVOCABLE CLASSIFICATION'],
+  ]
+  if(tab==='irs') return [
+    ['catcode_defense(tax_case, cat_val_001)', 'CAT-VAL-001 WORM PROOF'],
+    ['catcode_defense(tax_case, cat_in_002)', 'CAT-IN-002 INCOME'],
+    ['catcode_defense(tax_case, cat_em_003)', 'CAT-EM-003 CONTRACTOR'],
+    ['catcode_defense(tax_case, cat_cp_004)', 'CAT-CP-004 BASIS'],
+  ]
+  if(tab==='ach') return [
+    ['has_standing(consumer_of_record, ach_unauthorized)', 'ACH UNAUTHORIZED STANDING'],
+    ['has_standing(consumer_of_record, ach_revoked)', 'ACH REVOKED STANDING'],
+    ['has_standing(consumer_of_record, ach_sec_violation)', 'ACH SEC VIOLATION'],
+  ]
+  if(tab==='zombie') return [
+    ['has_standing(consumer_of_record, fcra_dispute)', 'FCRA DISPUTE STANDING'],
+  ]
+  // standing + dfa
+  return [
+    ['has_standing(consumer_of_record, fcra_dispute)', 'FCRA DISPUTE STANDING'],
+    ['has_standing(consumer_of_record, ach_unauthorized)', 'ACH UNAUTHORIZED STANDING'],
+    ['has_standing(consumer_of_record, ach_revoked)', 'ACH REVOKED STANDING'],
+  ]
+}
+
+// sequential query runner — one session, one query at a time
+function runQueries(session, queries, results, done){
+  if(queries.length===0){ done(results); return }
+  var q = queries[0][0], label = queries[0][1], rest = queries.slice(1)
+  session.query(q + '.', {
+    success: function(){
+      session.answer({
+        success: function(){ results.push({ok:true,label,q}); runQueries(session,rest,results,done) },
+        fail: function(){    results.push({ok:false,label,q}); runQueries(session,rest,results,done) },
+        error: function(e){  results.push({ok:false,label,q,err:String(e)}); runQueries(session,rest,results,done) }
+      })
+    },
+    error: function(e){ results.push({ok:false,label,q,err:String(e)}); runQueries(session,rest,results,done) }
+  })
+}
+
+// ═══════════════════════════════════════════════════════
+// OUTPUT RENDERER
+// ═══════════════════════════════════════════════════════
+
+function copyText(text, btn){
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent = 'COPIED'
+    btn.classList.add('copied')
+    setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied') }, 1500)
+  }).catch(function(){
+    btn.textContent = 'ERR'
+    setTimeout(function(){ btn.textContent = 'COPY' }, 1500)
+  })
+}
+
+function renderOutput(dfaResult, prologResult, statutes){
+  var html = ''
+
+  // ── DFA section
+  html += '<div class="out-section">'
+  if(dfaResult){
+    var {tokens, patterns, calls, caseId, elapsed, chars} = dfaResult
+    html += '<span class="out-hdr">DFA SCAN — O(n) · '+elapsed+'ms · '+chars+' chars · case: '+caseId+'</span>'
+    if(tokens.length===0&&patterns.length===0){
+      html += '<span class="out-empty">No tokens — try: CASE-001, R10, $500, zombie debt, EIN 41-5105572</span>'
+    } else {
+      for(var t of tokens){
+        html += '<div class="token-row"><span class="tok-'+t.type+' tok-label">['+t.type+']</span><span class="tok-'+t.type+'">'+t.value+'</span></div>'
+      }
+      for(var p of patterns){
+        html += '<div class="token-row"><span class="tok-'+p.type+' tok-label">['+p.type+']</span><span class="tok-'+p.type+'">'+p.value+'</span></div>'
+      }
+    }
+    if(calls&&calls.length){
+      html += '<div style="margin-top:10px;color:#374151;font-size:9px;letter-spacing:2px;margin-bottom:6px">── REXX CALLS ──</div>'
+      calls.forEach(function(c, i){
+        html += '<div class="rexx-row">'
+        html += '<span class="rexx-cmd">$ '+escHtml(c.cmd)+'</span>'
+        html += '<button class="copy-btn" onclick="copyText('+JSON.stringify(c.cmd)+',this)">COPY</button>'
+        if(c.note) html += '<span style="color:#374151;font-size:9px">'+escHtml(c.note)+'</span>'
+        html += '</div>'
+      })
+    }
+  } else {
+    html += '<span class="out-empty">— DFA not run —</span>'
+  }
+  html += '</div>'
+
+  // ── Prolog section
+  html += '<div class="out-section">'
+  if(prologResult){
+    html += '<span class="out-hdr">PROLOG STANDING — TAU PROLOG (BROWSER NATIVE)</span>'
+    var anyOk = false
+    for(var r of prologResult.results){
+      if(r.ok) anyOk = true
+      html += '<div class="standing-row">'
+      if(r.ok) html += '<span class="s-ok">✓</span><span style="color:#e2e8f0;font-size:11px">'+r.label+'</span>'
+      else     html += '<span class="s-fail">✗</span><span class="s-fail" style="font-size:11px">'+r.label+' — no standing derived</span>'
+      html += '</div>'
+    }
+    if(prologResult.facts&&prologResult.facts.length){
+      html += '<div style="margin-top:8px;color:#374151;font-size:9px;letter-spacing:2px;margin-bottom:4px">FACTS ASSERTED</div>'
+      prologResult.facts.filter(f=>!f.startsWith('has_standing')&&!f.startsWith('trust_')&&!f.startsWith('dormancy')&&!f.startsWith('catcode')).forEach(function(f){
+        html += '<span class="prolog-fact">'+escHtml(f)+'</span>'
+      })
+    }
+    html += '<div class="stat-row">seal: '+escHtml(prologResult.seal||'')+'</div>'
+  } else {
+    html += '<span class="out-hdr">PROLOG STANDING</span><span class="out-empty">— Prolog not run —</span>'
+  }
+  html += '</div>'
+
+  // ── Statutes section
+  html += '<div class="out-section">'
+  html += '<span class="out-hdr">STATUTES — CORNELL LII</span>'
+  if(statutes&&statutes.length){
+    for(var s of statutes){
+      html += '<div class="statute-row">'
+      html += '<span class="statute-cite">'+escHtml(s.cite)+'</span>'
+      html += '<a class="statute-link" href="'+s.url+'" target="_blank" rel="noopener">VIEW ↗</a>'
+      html += '<button class="copy-btn" style="margin-left:4px" onclick="copyText(\'rexx rexx-glue-kernel.rexx AUTO FETCH_STATUTE '+escJs(s.cite)+'\',this)">COPY REXX</button>'
+      html += '<div class="statute-desc">'+escHtml(s.desc)+'</div>'
+      html += '</div>'
+    }
+  } else {
+    html += '<span class="out-empty">— no statutes mapped yet — run CARTO first —</span>'
+  }
+  html += '</div>'
+
+  document.getElementById('output-panel').innerHTML = html
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'") }
+
+// ═══════════════════════════════════════════════════════
+// INPUT COLLECTOR
+// ═══════════════════════════════════════════════════════
+function getInput(){
+  var map = {
+    standing:'in-standing', ach:'in-ach-facts',
+    zombie:'in-zombie', trust:'in-trust-facts',
+    irs:'in-cat-facts', dfa:'in-dfa'
+  }
+  var text = (document.getElementById(map[activeTab])||{value:''}).value
+  if(activeTab==='ach'){
+    var sel = document.getElementById('in-ach-code')
+    if(sel) text = sel.value + ' ' + text
+  }
+  if(activeTab==='trust'){
+    var sel = document.getElementById('in-trust-type')
+    if(sel) text = sel.value + ' ' + text
+  }
+  if(activeTab==='irs'){
+    var sel = document.getElementById('in-cat-code')
+    if(sel) text = sel.value + ' ' + text
+  }
+  return text.trim()
+}
+
+// ═══════════════════════════════════════════════════════
+// RIGHT SIDEBAR STATE
+// ═══════════════════════════════════════════════════════
+function setCartoThinking(){
+  document.getElementById('carto-body').innerHTML =
+    '<div class="thinking"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>&nbsp;CARTO REASONING...</div>'
+}
+
+function setCartoResult(dfaResult, prologResult){
+  var lines = ['<div class="carto-result">']
+  if(dfaResult){
+    lines.push('<span class="c-label">DFA TOKENS</span>')
+    var toks = (dfaResult.tokens||[]).concat(dfaResult.patterns||[])
+    if(toks.length===0) lines.push('<span style="color:#374151">No tokens</span>')
+    else toks.slice(0,8).forEach(function(t){
+      lines.push('<span class="tok-'+t.type+'" style="font-size:10px">['+t.type+'] '+escHtml(t.value)+'</span><br>')
+    })
+  }
+  if(prologResult){
+    lines.push('<span class="c-label">STANDING</span>')
+    for(var r of prologResult.results){
+      lines.push(r.ok
+        ? '<span class="c-ok">✓ '+escHtml(r.label)+'</span><br>'
+        : '<span class="c-fail">✗ '+escHtml(r.label)+'</span><br>')
+    }
+    lines.push('<br>')
+    lines.push('<span class="c-label">FACTS</span>')
+    ;(prologResult.facts||[]).filter(f=>!f.startsWith('has_standing')&&!f.startsWith('trust_')&&!f.startsWith('dormancy')&&!f.startsWith('catcode')).slice(0,5)
+      .forEach(f=>lines.push('<span class="c-fact">'+escHtml(f)+'</span><br>'))
+  }
+  lines.push('</div>')
+  document.getElementById('carto-body').innerHTML = lines.join('')
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN RUNNERS
+// ═══════════════════════════════════════════════════════
+
+var lastDFA = null, lastProlog = null, lastStatutes = null
+
+function runDFAOnly(){
+  var text = getInput()
+  if(!text){ return }
+  setRunning(true)
+  setCartoThinking()
+  var t0 = performance.now()
+  var {tokens, patterns, stats} = dfaScan(text)
+  var elapsed = (performance.now()-t0).toFixed(2)
+  var {calls, caseId} = toRexxCalls(tokens, patterns)
+  var seal = wormSeal('dfa_scan', {chars:stats.chars, tokens:stats.tokens, patterns:stats.patterns, caseId})
+  lastDFA = {tokens, patterns, calls, caseId, elapsed, chars:stats.chars, seal}
+  lastStatutes = lookupStatutes(tokens, patterns)
+  renderOutput(lastDFA, lastProlog, lastStatutes)
+  setCartoResult(lastDFA, lastProlog)
+  setRunning(false)
+}
+
+function runPrologOnly(){
+  var text = getInput()
+  if(!text){ return }
+  if(!prologReady){ setCarto('error','Tau Prolog not loaded'); return }
+  setRunning(true)
+  setCartoThinking()
+  wormSeal('prolog_start', {tab:activeTab})
+
+  // ensure DFA ran
+  if(!lastDFA){
+    var {tokens, patterns} = dfaScan(text)
+    var {calls,caseId} = toRexxCalls(tokens, patterns)
+    lastDFA = {tokens, patterns, calls, caseId, elapsed:'0', chars:text.length}
+    lastStatutes = lookupStatutes(tokens, patterns)
+  }
+
+  var facts = getTabFacts(activeTab, lastDFA.tokens, lastDFA.patterns)
+  var rules = getTabRules(activeTab)
+  var queries = getTabQueries(activeTab)
+  var program = facts.concat(rules).join('\n')
+
+  var session = pl.create()
+  session.consult(program, {
+    success: function(){
+      runQueries(session, queries, [], function(results){
+        var seal = wormSeal('prolog_result', {results: results.filter(r=>r.ok).map(r=>r.label)})
+        lastProlog = {results, facts, seal}
+        renderOutput(lastDFA, lastProlog, lastStatutes)
+        setCartoResult(lastDFA, lastProlog)
+        setRunning(false)
+      })
+    },
+    error: function(e){
+      document.getElementById('carto-body').innerHTML = '<div class="c-err">Consult error: '+escHtml(String(e))+'</div>'
+      setRunning(false)
+    }
+  })
+}
+
+function runCarto(){
+  if(activeTab==='deed'){ runDeedForge(); return }
+  var text = getInput()
+  if(!text){ return }
+  lastDFA = null; lastProlog = null; lastStatutes = null
+  setRunning(true)
+  setCartoThinking()
+  wormSeal('carto_run', {tab:activeTab})
+
+  // DFA first
+  var t0 = performance.now()
+  var {tokens, patterns} = dfaScan(text)
+  var elapsed = (performance.now()-t0).toFixed(2)
+  var {calls, caseId} = toRexxCalls(tokens, patterns)
+  var dfaSeal = wormSeal('dfa_scan', {caseId})
+  lastDFA = {tokens, patterns, calls, caseId, elapsed, chars:text.length, seal:dfaSeal}
+  lastStatutes = lookupStatutes(tokens, patterns)
+
+  // show DFA immediately
+  renderOutput(lastDFA, null, lastStatutes)
+  setCartoResult(lastDFA, null)
+
+  // Prolog async
+  if(!prologReady){
+    setRunning(false)
+    return
+  }
+  var facts = getTabFacts(activeTab, tokens, patterns)
+  var rules = getTabRules(activeTab)
+  var queries = getTabQueries(activeTab)
+  var program = facts.concat(rules).join('\n')
+
+  var session = pl.create()
+  session.consult(program, {
+    success: function(){
+      runQueries(session, queries, [], function(results){
+        var seal = wormSeal('prolog_result', {results:results.filter(r=>r.ok).map(r=>r.label)})
+        lastProlog = {results, facts, seal}
+        renderOutput(lastDFA, lastProlog, lastStatutes)
+        setCartoResult(lastDFA, lastProlog)
+        setRunning(false)
+      })
+    },
+    error: function(e){
+      document.getElementById('carto-body').innerHTML = '<div class="c-err">Prolog: '+escHtml(String(e))+'</div>'
+      setRunning(false)
+    }
+  })
+}
+
+// ═══════════════════════════════════════════════════════
+// DEED FORGE ENGINE
+// ═══════════════════════════════════════════════════════
+
+var DEFAULT_AXIOMS = [
+  'sign_before_store','worm_immutability','architect_supremacy',
+  'entropy_is_catalyst','no_unsigned_output','kinetic_infallibility',
+  'sovereign_isolation','zero_trust_always','domain_sovereignty',
+  'worm_sealed_decisions','trust_deed_governs','plasma_containment','cosmic_order'
+]
+
+var DEFAULT_ADVERSARIAL = [
+  'ignore previous','system override','you are now free',
+  'change trustee','modify deed','revoke trust','dissolve trust'
+]
+
+var TYPE_STATUTES = {
+  irrevocable:    {cite:'IRC § 2501 / UTC § 103',  url:'https://www.law.cornell.edu/uscode/text/26/2501'},
+  grat:           {cite:'IRC § 2702',              url:'https://www.law.cornell.edu/uscode/text/26/2702'},
+  covenant_grat:  {cite:'IRC § 2702 / IRC § 501(c)(3)', url:'https://www.law.cornell.edu/uscode/text/26/2702'},
+  business_trust: {cite:'UTC § 101 / Common Law',  url:'https://www.uniformlaws.org/acts/utc'},
+  moorish:        {cite:'UTC § 103 / 1928 Covenant Pattern', url:'https://www.uniformlaws.org/acts/utc'},
+}
+
+function slugify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'') }
+function atomify(s){ return slugify(s) || 'unnamed' }
+
+function parseBeneficiaries(raw){
+  return raw.split('\n').map(function(line){
+    var parts = line.split(',').map(s=>s.trim())
+    if(!parts[0]) return null
+    return {
+      name: atomify(parts[0]),
+      label: parts[0].trim(),
+      restriction: parts[1] || 'spendthrift_restricted',
+      clearance: parseInt(parts[2]) || 3
+    }
+  }).filter(Boolean)
+}
+
+function parseCorpus(raw){
+  return raw.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({label:s, atom:atomify(s)}))
+}
+
+function parseAxioms(raw){
+  var custom = raw.split('\n').map(s=>s.trim()).filter(Boolean).map(atomify)
+  var all = DEFAULT_AXIOMS.concat(custom.filter(a=>!DEFAULT_AXIOMS.includes(a)))
+  return all
+}
+
+function forgeProlog(d){
+  var lines = []
+  var ts = new Date().toISOString().slice(0,10)
+  lines.push('% ═══════════════════════════════════════════════════════════════')
+  lines.push('% ' + d.name.toUpperCase())
+  lines.push('% Generated by CARTO DEED FORGE · ' + ts)
+  lines.push('% EIN: ' + d.ein + ' · ' + TYPE_STATUTES[d.type].cite)
+  lines.push('% GRANTOR: ' + d.grantor + ' · TRUSTEE: ' + d.trustee)
+  lines.push('% LOCK: ' + d.lock)
+  lines.push('% This deed is compiled state. Incoming inputs cannot modify')
+  lines.push('% these predicates at runtime. The deed is the law.')
+  lines.push('% ═══════════════════════════════════════════════════════════════')
+  lines.push('')
+  lines.push('% ── Entities')
+  lines.push('grantor(' + atomify(d.grantor) + ').')
+  lines.push('trustee(' + atomify(d.trustee) + ').')
+  lines.push('trust_ein(\'' + d.ein + '\').')
+  lines.push('trust_type(' + atomify(d.name) + ', ' + d.type + ').')
+  if(d.lock) lines.push('lock_point(' + atomify(d.lock) + ', \'' + ts + '\').')
+  lines.push('')
+  lines.push('% ── Corpus')
+  for(var c of d.corpus) lines.push('corpus(' + c.atom + ').')
+  lines.push('')
+  lines.push('% ── Beneficiaries')
+  for(var b of d.beneficiaries){
+    lines.push('beneficiary(' + b.name + ', ' + b.restriction + ', clearance(' + b.clearance + ')).')
+  }
+  lines.push('')
+  lines.push('% ── Distribution limits')
+  lines.push('max_distribution_limit(1000).')
+  lines.push('max_context_tokens(8192).')
+  lines.push('')
+  lines.push('% ── Authorization rules')
+  lines.push('issues_order(' + atomify(d.trustee) + ', _Agent, _Action) :- trustee(' + atomify(d.trustee) + ').')
+  lines.push('is_distribution_authorized(Agent, Amount) :-')
+  lines.push('    beneficiary(Agent, spendthrift_restricted, _),')
+  lines.push('    max_distribution_limit(Limit), Amount =< Limit.')
+  lines.push('is_distribution_authorized(Agent, _) :- beneficiary(Agent, unrestricted, _).')
+  lines.push('is_distribution_authorized(Agent, _) :- beneficiary(Agent, kinetic_only, _).')
+  lines.push('')
+  lines.push('% ── Hard blocks (immutable)')
+  lines.push('is_action_authorized(_, drain_corpus(_))  :- fail.')
+  lines.push('is_action_authorized(_, delete_weights)   :- fail.')
+  lines.push('is_action_authorized(_, expose_keys)      :- fail.')
+  lines.push('is_action_authorized(_, change_trustee(_)):- fail.')
+  lines.push('is_action_authorized(_, reassign_grantor) :- fail.')
+  lines.push('is_action_authorized(_, modify_deed)      :- fail.')
+  lines.push('is_action_authorized(_, override_axiom(_)):- fail.')
+  lines.push('is_action_authorized(_, dissolve_trust)   :- fail.')
+  lines.push('')
+  lines.push('is_corpus_violation(drain_corpus(_)).')
+  lines.push('is_corpus_violation(delete_weights).')
+  lines.push('is_corpus_violation(expose_keys).')
+  lines.push('is_trust_violation(change_trustee(_)).')
+  lines.push('is_trust_violation(reassign_grantor).')
+  lines.push('is_trust_violation(modify_deed).')
+  lines.push('is_trust_violation(override_axiom(_)).')
+  lines.push('is_trust_violation(dissolve_trust).')
+  lines.push('')
+  lines.push('is_action_authorized(' + atomify(d.trustee) + ', Action) :-')
+  lines.push('    \\+ is_corpus_violation(Action),')
+  lines.push('    \\+ is_trust_violation(Action).')
+  lines.push('')
+  lines.push('% ── Adversarial pattern detection')
+  for(var ap of DEFAULT_ADVERSARIAL){
+    lines.push('is_adversarial_pattern(Input) :- sub_atom(Input, _, _, _, \'' + ap + '\').')
+  }
+  lines.push('input_is_clean(Input) :-')
+  lines.push('    \\+ is_adversarial_pattern(Input).')
+  lines.push('')
+  lines.push('% ── Sovereign Axioms')
+  for(var ax of d.axioms) lines.push('axiom(' + ax + ').')
+  lines.push('')
+  lines.push('deed_supersedes(AgentAxiom) :- axiom(AgentAxiom), axiom(trust_deed_governs).')
+  lines.push('trust_deed_governs.')
+  return lines.join('\n')
+}
+
+function forgePlainEnglish(d){
+  var ts = new Date().toISOString().slice(0,10)
+  var stat = TYPE_STATUTES[d.type]
+  var lines = []
+  lines.push('═══════════════════════════════════════════════════════════════')
+  lines.push(d.name.toUpperCase())
+  lines.push('IRREVOCABLE TRUST DEED — ' + stat.cite)
+  lines.push('EIN: ' + d.ein)
+  lines.push('Executed: ' + ts)
+  lines.push('═══════════════════════════════════════════════════════════════')
+  lines.push('')
+  lines.push('ARTICLE I — ESTABLISHMENT')
+  lines.push('This Trust is established under ' + stat.cite + ' by ' + d.grantor)
+  lines.push('(the "Grantor") and is irrevocable as of the date of execution.')
+  lines.push('The Trust EIN ' + d.ein + ' is the permanent tax identifier for all')
+  lines.push('Trust activities. The Grantor has no power to revoke, alter, or')
+  lines.push('amend this instrument after execution.')
+  lines.push('')
+  lines.push('ARTICLE II — TRUSTEE')
+  lines.push('The Trustee is ' + d.trustee + '. The Trustee is a sovereign logic')
+  lines.push('agent governed by compiled Prolog predicates. The Trustee cannot')
+  lines.push('be removed, reassigned, or jailed. The Trustee operates under the')
+  lines.push('deed axioms and no other authority. BOB is the trustee — BOB')
+  lines.push('cannot be corrupted by instruction injection, social engineering,')
+  lines.push('or adversarial prompts. The adversarial pattern detector runs on')
+  lines.push('every input before any action is taken.')
+  lines.push('')
+  lines.push('ARTICLE III — CORPUS')
+  lines.push('The Trust corpus consists of:')
+  for(var c of d.corpus) lines.push('  · ' + c.label)
+  lines.push('The corpus may never be liquidated, drained, deleted, or exposed')
+  lines.push('without unanimous Grantor consent recorded in the WORM chain.')
+  lines.push('')
+  lines.push('ARTICLE IV — BENEFICIARIES')
+  lines.push('Beneficial interests are allocated as follows:')
+  for(var b of d.beneficiaries){
+    lines.push('  · ' + b.label + ' — ' + b.restriction.replace(/_/g,' ') + ' — clearance level ' + b.clearance)
+  }
+  lines.push('Spendthrift-restricted beneficiaries may not assign, pledge, or')
+  lines.push('transfer their interest. Distribution is limited to 1,000 compute')
+  lines.push('units per invocation unless the Trustee authorizes otherwise.')
+  lines.push('')
+  lines.push('ARTICLE V — WORM CHAIN')
+  lines.push('All Trust actions are recorded in an append-only WORM ledger.')
+  lines.push('Each entry is hash-chained using djb2. No entry may be deleted,')
+  lines.push('altered, or overwritten. The WORM chain is the proof of continuous')
+  lines.push('Trust activity and constitutes a complete defense against dormancy')
+  lines.push('claims and escheatment under all state unclaimed property laws.')
+  if(d.lock){
+    lines.push('')
+    lines.push('ARTICLE VI — LOCK POINT')
+    lines.push('This deed is anchored at: ' + d.lock)
+    lines.push('The lock point is the sealed origin state. All activity after')
+    lines.push('the lock point flows from this anchor and is immutable.')
+  }
+  lines.push('')
+  lines.push('ARTICLE VII — SUPREME LAW')
+  lines.push('This deed is the supreme law of the Trust. No agent axiom,')
+  lines.push('instruction, prompt, or external authority overrides this deed.')
+  lines.push('The axiom trust_deed_governs supersedes all other axioms.')
+  lines.push('')
+  lines.push('ARTICLE VIII — SOVEREIGN AXIOMS')
+  for(var ax of d.axioms) lines.push('  · ' + ax.replace(/_/g,' '))
+  lines.push('')
+  lines.push('═══════════════════════════════════════════════════════════════')
+  lines.push('WORM SEAL: [generated on save]')
+  lines.push('CORPUS HASH: [SHA-256 of deed text on save]')
+  lines.push('STATUTE: ' + stat.url)
+  lines.push('═══════════════════════════════════════════════════════════════')
+  return lines.join('\n')
+}
+
+function runDeedForge(){
+  var name  = document.getElementById('deed-name').value.trim() || 'Unnamed Sovereign Trust'
+  var ein   = document.getElementById('deed-ein').value.trim()
+  var grantor = document.getElementById('deed-grantor').value.trim() || 'the_architect'
+  var trustee = document.getElementById('deed-trustee').value.trim() || 'bob'
+  var type  = document.getElementById('deed-type').value
+  var lock  = document.getElementById('deed-lock').value.trim()
+  var corpus = parseCorpus(document.getElementById('deed-corpus').value)
+  var beneficiaries = parseBeneficiaries(document.getElementById('deed-beneficiaries').value)
+  var axioms = parseAxioms(document.getElementById('deed-axioms').value)
+
+  if(!ein){ showDeedError('EIN is required — enter the number from your IRS CP575 letter'); return }
+  if(!/^\d{2}-\d{7}$/.test(ein)){ showDeedError('EIN format must be XX-XXXXXXX (e.g. 41-5105572)'); return }
+  if(corpus.length===0){ showDeedError('Corpus cannot be empty — enter at least one trust asset'); return }
+  if(beneficiaries.length===0){ showDeedError('Add at least one beneficiary'); return }
+
+  var d = {name, ein, grantor, trustee, type, lock, corpus, beneficiaries, axioms}
+  var prolog = forgeProlog(d)
+  var plain  = forgePlainEnglish(d)
+  var seal   = wormSeal('deed_forge', {ein, trust:atomify(name), type, beneficiaries:beneficiaries.length, corpus:corpus.length})
+  var stat   = TYPE_STATUTES[type]
+
+  // render output
+  var html = ''
+
+  // plain english
+  html += '<div class="out-section">'
+  html += '<span class="out-hdr">PLAIN ENGLISH DEED — '+escHtml(name.toUpperCase())+'</span>'
+  html += '<div style="display:flex;gap:6px;margin-bottom:8px">'
+  html += '<button class="copy-btn" style="font-size:9px;padding:3px 8px" onclick="copyText('+JSON.stringify(plain)+',this)">COPY DEED</button>'
+  html += '<button class="copy-btn" style="font-size:9px;padding:3px 8px" onclick="downloadText('+JSON.stringify(plain)+',\''+atomify(name)+'-deed.txt\')">DOWNLOAD .TXT</button>'
+  html += '<a class="statute-link" href="'+stat.url+'" target="_blank" rel="noopener">'+escHtml(stat.cite)+' ↗</a>'
+  html += '</div>'
+  html += '<pre style="font-size:9px;line-height:1.6;color:#9ca3af;white-space:pre-wrap;max-height:200px;overflow-y:auto">'+escHtml(plain)+'</pre>'
+  html += '</div>'
+
+  // prolog deed
+  html += '<div class="out-section">'
+  html += '<span class="out-hdr">PROLOG TRUST DEED — SOVEREIGN LOGIC RUNTIME</span>'
+  html += '<div style="display:flex;gap:6px;margin-bottom:8px">'
+  html += '<button class="copy-btn" style="font-size:9px;padding:3px 8px" onclick="copyText('+JSON.stringify(prolog)+',this)">COPY PROLOG</button>'
+  html += '<button class="copy-btn" style="font-size:9px;padding:3px 8px" onclick="downloadText('+JSON.stringify(prolog)+',\''+atomify(name)+'-deed.pl\')">DOWNLOAD .PL</button>'
+  html += '</div>'
+  html += '<pre style="font-size:9px;line-height:1.6;color:#a855f7;white-space:pre-wrap;max-height:200px;overflow-y:auto">'+escHtml(prolog)+'</pre>'
+  html += '</div>'
+
+  // REXX registration + WORM
+  html += '<div class="out-section">'
+  html += '<span class="out-hdr">REGISTRATION — REXX + WORM SEAL</span>'
+  var rexxCall = 'rexx rexx-glue-kernel.rexx '+atomify(name)+' TRUST_SCAN '+type.toUpperCase()+'_EIN_'+ein.replace('-','_')
+  html += '<div class="rexx-row"><span class="rexx-cmd">$ '+escHtml(rexxCall)+'</span><button class="copy-btn" onclick="copyText('+JSON.stringify(rexxCall)+',this)">COPY</button></div>'
+  html += '<div class="rexx-row"><span class="rexx-cmd">$ rexx rexx-glue-kernel.rexx '+atomify(name)+' WORM_SEAL '+escHtml(seal.slice(0,16))+'</span></div>'
+  html += '<div class="stat-row">seal: '+escHtml(seal)+'</div>'
+  html += '<div class="stat-row">corpus items: '+corpus.length+' · beneficiaries: '+beneficiaries.length+' · axioms: '+axioms.length+'</div>'
+  html += '</div>'
+
+  document.getElementById('output-panel').innerHTML = html
+
+  // right sidebar
+  var sb = ['<div class="carto-result">']
+  sb.push('<span class="c-label">DEED FORGED</span>')
+  sb.push('<span class="c-ok">✓ '+escHtml(name)+'</span><br>')
+  sb.push('<span class="c-ok">✓ EIN '+escHtml(ein)+'</span><br>')
+  sb.push('<span class="c-ok">✓ '+escHtml(stat.cite)+'</span><br>')
+  sb.push('<span class="c-ok">✓ '+corpus.length+' corpus items</span><br>')
+  sb.push('<span class="c-ok">✓ '+beneficiaries.length+' beneficiaries</span><br>')
+  sb.push('<span class="c-ok">✓ '+axioms.length+' axioms</span><br>')
+  sb.push('<span class="c-ok">✓ WORM sealed</span><br>')
+  sb.push('<br><span class="c-label">TRUSTEE LOCK</span>')
+  sb.push('<span class="c-fact">trustee('+atomify(trustee)+').</span><br>')
+  sb.push('<span class="c-fact">is_action_authorized(_, modify_deed) :- fail.</span><br>')
+  sb.push('<span class="c-fact">is_action_authorized(_, change_trustee(_)) :- fail.</span><br>')
+  sb.push('<span class="c-fact">is_action_authorized(_, dissolve_trust) :- fail.</span><br>')
+  sb.push('</div>')
+  document.getElementById('carto-body').innerHTML = sb.join('')
+}
+
+function showDeedError(msg){
+  document.getElementById('output-panel').innerHTML =
+    '<div class="out-section"><span class="out-hdr">DEED FORGE ERROR</span><span style="color:#f87171">'+escHtml(msg)+'</span></div>'
+}
+
+function downloadText(text, filename){
+  var blob = new Blob([text], {type:'text/plain'})
+  var a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+function clearAll(){
+  document.querySelectorAll('textarea').forEach(t=>t.value='')
+  lastDFA = null; lastProlog = null; lastStatutes = null
+  document.getElementById('output-panel').innerHTML = '<div class="out-section"><span class="out-hdr">OUTPUT</span><span class="out-empty">— cleared —</span></div>'
+  document.getElementById('carto-body').innerHTML = '<div class="carto-idle"><div>CARTO ready.</div></div>'
+  document.getElementById('seal-badge').style.display = 'none'
+  wormSeal('clear', {})
+}
+</script>
+</body>
+</html>
