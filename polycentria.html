@@ -166,125 +166,102 @@ vec3 tqf_color(float tension_err) {
   );
 }
 
-// ── UFO disc SDF ──────────────────────────────────────────────────────────────
-// Oblate spheroid = classic saucer shape
+// ── Smooth hash ───────────────────────────────────────────────────────────────
 
-float sdUFO(vec3 p, vec3 center, float r, float flat) {
-  vec3 q = p - center;
-  // squash Y axis to make disc
-  q.y *= flat;
-  float body = length(q) - r;
-  // dome on top
-  float dome = length(q - vec3(0., r*.3, 0.)) - r*.6;
-  float saucer = max(body, -dome);
-  // rim glow ring
-  float rim = abs(length(q.xz) - r*.85) - r*.06;
-  rim = max(rim, abs(q.y) - r*.12);
-  return min(saucer, rim);
-}
-
-// UFO density field — 7 ships orbiting at different radii + speeds
-float ufo_field(vec3 p, float t, float seed) {
-  float d = 1e9;
-  float density = 0.;
-
-  for(int i=0; i<7; i++) {
-    float fi = float(i);
-    // Each UFO has unique orbit radius, speed, inclination
-    float orbit_r   = .6 + fi * .22 + sin(seed * .001 + fi) * .15;
-    float orbit_spd = .07 + fi * .013;
-    float incline   = fi * .44 + seed * .0002;
-    float phase     = fi * TAU / 7. + seed * .00003;
-
-    float angle = t * orbit_spd + phase;
-    vec3 center = vec3(
-      orbit_r * cos(angle),
-      sin(t * .04 * (fi*.3+1.) + incline) * .35,
-      orbit_r * sin(angle)
-    );
-    // Tilt orbit plane
-    center.yz = rot(incline * .4) * center.yz;
-    center.xz = rot(incline * .2) * center.xz;
-
-    float r    = .045 + fi * .008;
-    float flat = 3.5 + sin(fi) * 1.2; // squash factor
-
-    float sd = sdUFO(p, center, r, flat);
-    if(sd < 0.) {
-      density += (-sd / r) * (.8 + .4*sin(fi*7.3 + t));
-    }
-    d = min(d, sd);
-  }
-  return density;
-}
-
-// ── Nebula cloud field ────────────────────────────────────────────────────────
-// Billowing alien gas clouds using domain-warped fbm
-
-float hash31(vec3 p) {
-  p = fract(p * vec3(443.8975, 397.2973, 491.1871));
-  p += dot(p, p.yxz + 19.19);
+float h3(vec3 p) {
+  p = fract(p * vec3(127.1, 311.7, 74.7));
+  p += dot(p, p.yzx + 19.19);
   return fract((p.x + p.y) * p.z);
 }
 
-float fbm(vec3 p, int oct) {
-  float v = 0., a = .5, f = 1.;
-  for(int i=0;i<5;i++) {
-    if(i >= oct) break;
-    v += a * (hash31(p * f) * 2. - 1.);
-    f *= 2.1; a *= .48;
-  }
+float h2(vec2 p) {
+  p = fract(p * vec2(127.1, 311.7));
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+// Fixed 4-octave fbm — no dynamic breaks (WebGL safe)
+float fbm4(vec3 p) {
+  float v = 0.;
+  v += 0.500 * (h3(p*1.0)*2.-1.);
+  v += 0.250 * (h3(p*2.1)*2.-1.);
+  v += 0.125 * (h3(p*4.4)*2.-1.);
+  v += 0.063 * (h3(p*9.2)*2.-1.);
   return v;
 }
 
-float nebula_field(vec3 p, float t, float seed) {
-  // Domain warp — makes clouds billow and morph
-  vec3 warp = vec3(
-    fbm(p + vec3(0., 0., t*.03), 3),
-    fbm(p + vec3(1.7, 9.2, t*.02), 3),
-    fbm(p + vec3(8.3, 2.8, t*.025), 3)
-  ) * .55;
-
-  vec3 wp = p + warp;
-
-  // Three layered nebula lobes at different positions
-  float n = 0.;
-
-  // Lobe 1: large outer nebula arm
-  float l1 = fbm(wp * .8 + vec3(seed*.0001, t*.01, 0.), 4);
-  n += smoothstep(-.1, .5, l1) * exp(-length(p - vec3(.8,.2,-.3)) * 1.2);
-
-  // Lobe 2: dense inner cloud
-  float l2 = fbm(wp * 1.4 + vec3(3.1, seed*.0001, t*.015), 4);
-  n += smoothstep(.0, .6, l2) * exp(-length(p - vec3(-.6,-.1,.5)) * 1.5);
-
-  // Lobe 3: wispy trail
-  float l3 = fbm(wp * 2.2 + vec3(t*.02, 7.4, seed*.0001), 3);
-  n += smoothstep(.1, .7, l3) * exp(-length(p) * .9) * .5;
-
-  return clamp(n * .4, 0., 1.);
+float fbm3(vec3 p) {
+  float v = 0.;
+  v += 0.500 * (h3(p*1.0)*2.-1.);
+  v += 0.250 * (h3(p*2.1)*2.-1.);
+  v += 0.125 * (h3(p*4.4)*2.-1.);
+  return v;
 }
 
-// ── Alien ring structure ──────────────────────────────────────────────────────
-// Toroidal crystalline rings that slowly morph
+// ── UFO disc density ──────────────────────────────────────────────────────────
+
+float one_ufo(vec3 p, vec3 center, float r, float flat) {
+  vec3 q = p - center;
+  q.y *= flat;
+  float body = length(q) - r;
+  float dome = length(q - vec3(0., r*.3, 0.)) - r*.55;
+  float saucer = max(body, -dome);
+  float rim = abs(length(q.xz) - r*.82) - r*.055;
+  rim = max(rim, abs(q.y) - r*.1);
+  float sd = min(saucer, rim);
+  if(sd < 0.0) return (-sd / r);
+  return 0.0;
+}
+
+float ufo_field(vec3 p, float t, float seed) {
+  float density = 0.;
+  float s = seed * 0.00003;
+  // 7 UFOs — fully unrolled, no loop with dynamic branches
+  float fi; vec3 center; float angle;
+
+  fi=0.; angle=t*.07 + fi*TAU/7.+s; center=vec3((.6+fi*.22)*cos(angle), sin(t*.04+fi*.44)*0.35, (.6+fi*.22)*sin(angle)); center.yz=rot(fi*.44*.4)*center.yz; density+=one_ufo(p,center,.045+fi*.008,3.8);
+  fi=1.; angle=t*.083+fi*TAU/7.+s; center=vec3((.82+fi*.22)*cos(angle), sin(t*.055+fi*.44)*0.35,(.82+fi*.22)*sin(angle)); center.yz=rot(fi*.44*.4)*center.yz; density+=one_ufo(p,center,.053+fi*.008,3.5);
+  fi=2.; angle=t*.096+fi*TAU/7.+s; center=vec3((1.04)*cos(angle), sin(t*.068+fi*.44)*.3,(1.04)*sin(angle)); center.xz=rot(fi*.2)*center.xz; density+=one_ufo(p,center,.061+fi*.008,4.0);
+  fi=3.; angle=t*.109+fi*TAU/7.+s; center=vec3((1.26)*cos(angle), sin(t*.08+fi*.44)*.28,(1.26)*sin(angle)); center.yz=rot(fi*.44*.4)*center.yz; density+=one_ufo(p,center,.069,3.6);
+  fi=4.; angle=t*.122+fi*TAU/7.+s; center=vec3((1.48)*cos(angle), sin(t*.09+fi*.44)*.25,(1.48)*sin(angle)); center.xz=rot(fi*.2)*center.xz; density+=one_ufo(p,center,.061,4.2);
+  fi=5.; angle=t*.135+fi*TAU/7.+s; center=vec3((1.7)*cos(angle),  sin(t*.1+fi*.44)*.22,(1.7)*sin(angle));  center.yz=rot(fi*.44*.4)*center.yz; density+=one_ufo(p,center,.053,3.9);
+  fi=6.; angle=t*.148+fi*TAU/7.+s; center=vec3((1.92)*cos(angle), sin(t*.11+fi*.44)*.18,(1.92)*sin(angle)); center.xz=rot(fi*.2)*center.xz; density+=one_ufo(p,center,.045,4.5);
+
+  return density;
+}
+
+// ── Nebula field ──────────────────────────────────────────────────────────────
+
+float nebula_field(vec3 p, float t, float seed) {
+  float s = seed * 0.0001;
+  // Domain warp via fixed fbm
+  vec3 warp = vec3(
+    fbm3(p + vec3(0., 0., t*.03)),
+    fbm3(p + vec3(1.7, 9.2, t*.02)),
+    fbm3(p + vec3(8.3, 2.8, t*.025))
+  ) * .45;
+  vec3 wp = p + warp;
+
+  float n = 0.;
+  float l1 = fbm4(wp*.8 + vec3(s, t*.01, 0.));
+  n += smoothstep(-.1,.5,l1) * exp(-length(p - vec3(.8,.2,-.3)) * 1.3);
+  float l2 = fbm4(wp*1.4 + vec3(3.1, s, t*.015));
+  n += smoothstep(.0,.6,l2) * exp(-length(p - vec3(-.6,-.1,.5)) * 1.6);
+  float l3 = fbm3(wp*2.2 + vec3(t*.02, 7.4, s));
+  n += smoothstep(.1,.7,l3) * exp(-length(p) * .95) * .45;
+  return clamp(n * .38, 0., 1.);
+}
+
+// ── Alien crystalline rings ───────────────────────────────────────────────────
 
 float alien_rings(vec3 p, float t, float seed) {
   float rings = 0.;
-  for(int i=0;i<4;i++) {
-    float fi = float(i);
-    float R = .5 + fi * .18; // major radius
-    float r = .04 - fi * .007; // minor radius
-    float tilt = fi * .6 + t * (.02 + fi*.005);
-    vec3 q = p;
-    q.xz = rot(tilt) * q.xz;
-    q.xy = rot(fi * 1.2) * q.xy;
-    // torus SDF
-    vec2 qq = vec2(length(q.xz) - R, q.y);
-    float torus = length(qq) - r;
-    // pulse ring density
-    float pulse = sin(t * (.8 + fi*.3) + fi * 2.1) * .5 + .5;
-    if(torus < 0.) rings += (-torus / r) * pulse * .6;
-  }
+  float fi; vec3 q; vec2 qq; float R,r,tilt,torus,pulse;
+
+  fi=0.; R=.50; r=.040; tilt=fi*.6+t*(.020+fi*.005); q=p; q.xz=rot(tilt)*q.xz; q.xy=rot(fi*1.2)*q.xy; qq=vec2(length(q.xz)-R,q.y); torus=length(qq)-r; pulse=sin(t*(.8+fi*.3)+fi*2.1)*.5+.5; if(torus<0.)rings+=(-torus/r)*pulse*.6;
+  fi=1.; R=.68; r=.033; tilt=fi*.6+t*(.025+fi*.005); q=p; q.xz=rot(tilt)*q.xz; q.xy=rot(fi*1.2)*q.xy; qq=vec2(length(q.xz)-R,q.y); torus=length(qq)-r; pulse=sin(t*(.8+fi*.3)+fi*2.1)*.5+.5; if(torus<0.)rings+=(-torus/r)*pulse*.6;
+  fi=2.; R=.86; r=.026; tilt=fi*.6+t*(.030+fi*.005); q=p; q.xz=rot(tilt)*q.xz; q.xy=rot(fi*1.2)*q.xy; qq=vec2(length(q.xz)-R,q.y); torus=length(qq)-r; pulse=sin(t*(.8+fi*.3)+fi*2.1)*.5+.5; if(torus<0.)rings+=(-torus/r)*pulse*.6;
+  fi=3.; R=1.04; r=.019; tilt=fi*.6+t*(.035+fi*.005); q=p; q.xz=rot(tilt)*q.xz; q.xy=rot(fi*1.2)*q.xy; qq=vec2(length(q.xz)-R,q.y); torus=length(qq)-r; pulse=sin(t*(.8+fi*.3)+fi*2.1)*.5+.5; if(torus<0.)rings+=(-torus/r)*pulse*.6;
+
   return rings;
 }
 
@@ -448,9 +425,8 @@ void main() {
   bg += vec3(.12, .05, .0) * amber * nebula_bg;
 
   // Star field — two sizes
-  float star_sm = pow(escher(rd * 300., seed + 1.), 22.) * .9;
-  float star_lg = pow(escher(rd * 80., seed + 7.), 28.) * 2.;
-  // Large stars get a color tint (blue giants, orange dwarfs)
+  float star_sm = pow(clamp(escher(rd * 300., seed + 1.),0.,1.), 22.) * .9;
+  float star_lg = pow(clamp(escher(rd * 80.,  seed + 7.),0.,1.), 28.) * 1.8;
   vec3 star_col = mix(vec3(.5,.7,1.), vec3(1.,.5,.2),
     escher(rd * 40., seed + 3.));
   bg += star_sm + star_col * star_lg;
