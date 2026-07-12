@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Polycentria — Scalar Field Tessellation Engine</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;}
+canvas{display:block;width:100vw;height:100vh;}
+#ui{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:10;}
+#top{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center;}
+#title{font-size:11px;color:#bf5af2;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 0 20px #bf5af2;}
+#subtitle{font-size:9px;color:#333;letter-spacing:.2em;margin-top:4px;}
+#controls{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:32px;align-items:center;pointer-events:all;}
+.ctrl{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.ctrl label{font-size:9px;color:#555;letter-spacing:.15em;}
+.ctrl input[type=range]{-webkit-appearance:none;width:120px;height:2px;background:#1a1a2a;outline:none;border-radius:1px;}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#bf5af2;cursor:pointer;box-shadow:0 0 8px #bf5af2;}
+.ctrl .val{font-size:10px;color:#bf5af2;font-family:'Courier New',monospace;min-width:36px;text-align:center;}
+#metrics{position:absolute;top:16px;right:20px;font-size:9px;color:#222;letter-spacing:.1em;line-height:2;}
+#metrics .live{color:#0a84ff;}
+#metrics .warn{color:#ff453a;}
+#resonance{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:#00ff88;letter-spacing:.3em;text-align:center;opacity:0;transition:opacity .5s;text-shadow:0 0 30px #00ff88;}
+#seed-display{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);font-size:9px;color:#1a1a2a;letter-spacing:.15em;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div id="top">
+    <div id="title">⬡ POLYCENTRIA — SHD-CCP TESSELLATION CRYSTAL</div>
+    <div id="subtitle">SCALAR FIELD GEOMETRIC BACKPROPAGATION · HOPF FIBRATION ENGINE</div>
+  </div>
+  <div id="metrics">
+    <div>ENTROPY <span id="m-entropy" class="live">0.000</span></div>
+    <div>TORSION  <span id="m-torsion" class="live">0.00</span></div>
+    <div>TENSION  <span id="m-tension" class="live">1.00</span></div>
+    <div>PHASE    <span id="m-phase"   class="live">0.000</span></div>
+    <div>WORM     <span id="m-worm"    class="live">——</span></div>
+  </div>
+  <div id="resonance">⬡ RIEMANN ZETA RESONANCE POLE ⬡<br/>ABSOLUTE SYMMETRY ACHIEVED</div>
+  <div id="controls">
+    <div class="ctrl">
+      <label>TORSION</label>
+      <input type="range" id="c-torsion" min="0" max="12" step="0.1" value="6"/>
+      <span class="val" id="v-torsion">6.0</span>
+    </div>
+    <div class="ctrl">
+      <label>TENSION</label>
+      <input type="range" id="c-tension" min="0" max="2" step="0.01" value="1"/>
+      <span class="val" id="v-tension">1.00</span>
+    </div>
+    <div class="ctrl">
+      <label>FREQUENCY</label>
+      <input type="range" id="c-freq" min="0.1" max="3" step="0.05" value="1"/>
+      <span class="val" id="v-freq">1.00</span>
+    </div>
+    <div class="ctrl">
+      <label>SEED</label>
+      <input type="range" id="c-seed" min="0" max="65535" step="1" value="13371"/>
+      <span class="val" id="v-seed">13371</span>
+    </div>
+  </div>
+  <div id="seed-display">EINSTEIN TILE · 0x3429 · WORM:GENESIS</div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+
+// ── Shaders ───────────────────────────────────────────────────────────────────
+
+const VS = `
+precision highp float;
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0., 1.); }
+`;
+
+const FS = `
+precision highp float;
+uniform float u_time;
+uniform vec2  u_res;
+uniform float u_torsion;
+uniform float u_tension;
+uniform float u_freq;
+uniform float u_seed;
+
+#define PHI 1.6180339887498948
+#define TAU 6.2831853071795864
+#define ITER 96
+
+// ── Math ──────────────────────────────────────────────────────────────────────
+
+mat2 rot(float a) {
+  float c=cos(a),s=sin(a);
+  return mat2(c,-s,s,c);
+}
+
+vec3 hopf(float eta, float xi1, float xi2) {
+  // Hopf fibration S^3 → S^2: maps circle fiber to point on 2-sphere
+  float s = sin(eta), c = cos(eta);
+  return vec3(
+    s * cos(xi1 + xi2),
+    s * sin(xi1 + xi2),
+    c * cos(xi1 - xi2)
+  ) * .5 + vec3(c * sin(xi1 - xi2) * .5, 0., 0.);
+}
+
+// ── Trefoil knot parametric ───────────────────────────────────────────────────
+
+vec3 trefoil(float t, float phase, float freq) {
+  float tt = t * freq + phase;
+  float x = sin(tt) + 2. * sin(2.*tt);
+  float y = cos(tt) - 2. * cos(2.*tt);
+  float z = -sin(3.*tt);
+  return vec3(x,y,z) * .18;
+}
+
+// ── Prime sieve hash (Escher 13-cube) ─────────────────────────────────────────
+
+float escher(vec3 p, float seed) {
+  // deterministic pseudo-random via prime sieve
+  vec3 q = fract(p * vec3(127.1, 311.7, 74.7) + seed * .00001);
+  q = q * q * (3. - 2.*q); // smoothstep
+  float n = q.x + 37.*q.y + 439.*q.z;
+  return fract(sin(n) * 43758.5453);
+}
+
+// ── Scalar field density ───────────────────────────────────────────────────────
+
+float field(vec3 p, float t, float freq, float torsion, float seed) {
+  float d = 0.;
+  vec3 q = p;
+
+  // Three Trefoil Knot wave functions (phase-offset by 2π/3)
+  for(int i=0;i<3;i++) {
+    float phase = float(i) * TAU / 3.;
+    vec3 tk = trefoil(t * .3, phase + torsion * .5, freq);
+    vec3 r = q - tk;
+    float knot = 1. / (1. + dot(r,r) * 12.);
+    d += knot;
+    // rotate via Hopf fiber twist
+    q.xy = rot(t * .07 * PHI + phase) * q.xy;
+    q.yz = rot(t * .05 / PHI) * q.yz;
+  }
+
+  // Escher hash noise (Fokker-Planck ambient)
+  d += escher(q * 2.1, seed) * .12;
+
+  // Chiral compression toward zero-point
+  float r2 = dot(p,p);
+  d *= exp(-r2 * .8); // Gaussian envelope = singularity pull
+
+  return d;
+}
+
+// ── TQF Tension Web color ─────────────────────────────────────────────────────
+
+vec3 tqf_color(float tension_err) {
+  // stable cyan → critical red based on tension error
+  return mix(
+    vec3(0., 0.8, 1.),   // stable: cyan
+    vec3(1., .1, .3),    // critical: magenta-red
+    smoothstep(0., 1., tension_err)
+  );
+}
+
+// ── Phase-conjugate inverse streams (backprop streams) ────────────────────────
+
+float backprop_stream(vec3 p, float t, float freq) {
+  float s = 0.;
+  for(int i=0;i<12;i++) {
+    // 12 magenta phase-conjugate inverse streams
+    float angle = float(i) * TAU / 12.;
+    vec3 dir = vec3(cos(angle), sin(angle), sin(angle * PHI));
+    // time-reversed: -t
+    float wave = sin(dot(p, dir) * freq * 8. - t * .5 * float(i+1) * -.3);
+    s += wave * .04;
+  }
+  return s;
+}
+
+// ── Main ray march ────────────────────────────────────────────────────────────
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - u_res * .5) / min(u_res.x, u_res.y);
+
+  float seed    = u_seed;
+  float torsion = u_torsion;
+  float tension = u_tension;
+  float freq    = u_freq;
+  float t       = u_time;
+
+  // Ray setup — slight perspective
+  vec3 ro = vec3(0., 0., 2.8);
+  vec3 rd = normalize(vec3(uv, -1.2));
+
+  // Rotate view slowly (ergodic winding feel)
+  float rx = t * .04;
+  float ry = t * .027 * PHI;
+  rd.xz = rot(ry) * rd.xz;
+  rd.yz = rot(rx * .6) * rd.yz;
+  ro.xz = rot(ry) * ro.xz;
+  ro.yz = rot(rx * .6) * ro.yz;
+
+  // ── Volume march ──────────────────────────────────────────────────────────
+  vec3 col = vec3(0.);
+  float alpha = 0.;
+  float step_size = 0.045;
+  vec3 p = ro;
+
+  // Tension error — how far from equilibrium (1.0)
+  float tension_err = abs(tension - 1.) * 2.;
+  bool resonance = (abs(torsion - 12.) < .05 && abs(tension - 1.) < .02);
+
+  for(int i=0;i<ITER;i++) {
+    if(alpha > .98) break;
+    p += rd * step_size;
+
+    float f = field(p, t, freq, torsion, seed);
+    float bp = backprop_stream(p, t, freq);
+
+    if(f > .01) {
+      float density = f * step_size * 3.5;
+
+      // ── Color: purple/blue vortex base ──────────────────────────────────
+      float r2 = dot(p,p);
+      float depth = float(i) / float(ITER);
+
+      // Core color — deep purple to electric blue
+      vec3 c_core = mix(
+        vec3(.45, .05, .9),   // deep purple
+        vec3(.0,  .5,  1.),   // electric blue
+        smoothstep(0., .8, r2 * 1.5)
+      );
+
+      // Add phase glow — teal/cyan inner
+      c_core = mix(c_core, vec3(.0, .9, .85), f * .4);
+
+      // Phase-conjugate magenta streams
+      c_core += vec3(.8, .0, .6) * abs(bp) * 2.5;
+
+      // TQF Tension Web overlay
+      vec3 tqf = tqf_color(tension_err);
+      float web = pow(f, 3.) * tension_err * 3.;
+      c_core = mix(c_core, tqf, web);
+
+      // Riemann resonance pole — blinding vertical cyan pillar
+      if(resonance) {
+        float pillar = exp(-p.x*p.x * 40.) * exp(-p.z*p.z * 40.);
+        c_core += vec3(0., 1., .9) * pillar * 6.;
+      }
+
+      // Depth fog: farther = darker purple
+      c_core *= mix(1., .2, depth);
+
+      // Accumulate with exponential transmittance
+      col += c_core * density * (1. - alpha);
+      alpha += density * (1. - alpha) * .7;
+    }
+  }
+
+  // ── Background: deep space vortex ─────────────────────────────────────────
+  // Star field + deep purple nebula
+  float nebula = 0.;
+  {
+    vec3 np = rd * 3.;
+    for(int i=0;i<3;i++) {
+      np = abs(np) / dot(np,np) - .9;
+    }
+    nebula = length(np) * .15;
+  }
+  vec3 bg = mix(
+    vec3(0., 0., 0.02),
+    vec3(.08, .0, .18),
+    nebula
+  );
+
+  // Star scatter
+  float star = pow(escher(rd * 200., seed + 1.), 20.) * .8;
+  bg += star;
+
+  col = col + bg * (1. - alpha);
+
+  // ── Tone mapping + vignette ───────────────────────────────────────────────
+  col = col / (col + 1.);           // reinhard
+  col = pow(col, vec3(.45));        // gamma
+
+  float vign = 1. - dot(uv,uv) * .5;
+  col *= vign;
+
+  gl_FragColor = vec4(col, 1.);
+}
+`;
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+gl.useProgram(prog);
+
+// Full-screen quad
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(loc);
+gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+// Uniforms
+const U = {
+  time:    gl.getUniformLocation(prog, 'u_time'),
+  res:     gl.getUniformLocation(prog, 'u_res'),
+  torsion: gl.getUniformLocation(prog, 'u_torsion'),
+  tension: gl.getUniformLocation(prog, 'u_tension'),
+  freq:    gl.getUniformLocation(prog, 'u_freq'),
+  seed:    gl.getUniformLocation(prog, 'u_seed'),
+};
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+
+const state = { torsion: 6, tension: 1, freq: 1, seed: 13371 };
+
+function wire(id, valId, key, fmt) {
+  const el = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    state[key] = parseFloat(el.value);
+    vl.textContent = fmt(state[key]);
+    updateSeedDisplay();
+  });
+}
+
+wire('c-torsion', 'v-torsion', 'torsion', v => v.toFixed(1));
+wire('c-tension', 'v-tension', 'tension', v => v.toFixed(2));
+wire('c-freq',    'v-freq',    'freq',    v => v.toFixed(2));
+wire('c-seed',    'v-seed',    'seed',    v => Math.floor(v));
+
+function updateSeedDisplay() {
+  const hex = Math.floor(state.seed).toString(16).toUpperCase().padStart(4,'0');
+  document.getElementById('seed-display').textContent =
+    `EINSTEIN TILE · 0x${hex} · WORM:${wormHead(state.seed)}`;
+}
+
+function wormHead(seed) {
+  const h = Math.abs(Math.sin(seed * 137.508) * 0xFFFFFFFF) >>> 0;
+  return h.toString(16).slice(0,8).toUpperCase();
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+
+let resonanceTimer = 0;
+const resonEl = document.getElementById('resonance');
+
+function updateMetrics(t) {
+  const entropy = Math.abs(Math.sin(t * 0.3 + state.seed * 0.001) * 0.21);
+  const torsionErr = Math.abs(state.torsion - 12) / 12;
+  const tensionErr = Math.abs(state.tension - 1.0);
+  const phase = ((t * 0.1) % (Math.PI * 2)).toFixed(3);
+  const worm = wormHead(state.seed + t * 0.01);
+
+  document.getElementById('m-entropy').textContent = entropy.toFixed(3);
+  document.getElementById('m-torsion').textContent = state.torsion.toFixed(2);
+  document.getElementById('m-tension').textContent = state.tension.toFixed(2);
+  document.getElementById('m-phase').textContent   = phase;
+  document.getElementById('m-worm').textContent    = worm.slice(0,8);
+
+  const tEl = document.getElementById('m-tension');
+  tEl.className = tensionErr > 0.5 ? 'warn' : 'live';
+
+  // Riemann Zeta Resonance Pole
+  const isResonance = Math.abs(state.torsion - 12) < 0.05 && tensionErr < 0.02;
+  if (isResonance) {
+    resonanceTimer = 120;
+  }
+  if (resonanceTimer > 0) {
+    resonanceTimer--;
+    resonEl.style.opacity = Math.min(1, resonanceTimer / 20);
+  } else {
+    resonEl.style.opacity = 0;
+  }
+}
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+
+function resize() {
+  canvas.width  = window.innerWidth  * devicePixelRatio;
+  canvas.height = window.innerHeight * devicePixelRatio;
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+
+const t0 = performance.now();
+let frame = 0;
+
+function render() {
+  requestAnimationFrame(render);
+  const t = (performance.now() - t0) / 1000;
+
+  gl.uniform1f(U.time,    t);
+  gl.uniform2f(U.res,     canvas.width, canvas.height);
+  gl.uniform1f(U.torsion, state.torsion);
+  gl.uniform1f(U.tension, state.tension);
+  gl.uniform1f(U.freq,    state.freq);
+  gl.uniform1f(U.seed,    state.seed);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  if (++frame % 6 === 0) updateMetrics(t);
+}
+
+updateSeedDisplay();
+render();
+
+// ── Keyboard: SPACE = random seed, R = reset ──────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    state.seed = Math.random() * 65535;
+    document.getElementById('c-seed').value = state.seed;
+    document.getElementById('v-seed').textContent = Math.floor(state.seed);
+    updateSeedDisplay();
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    state.torsion = 6; state.tension = 1; state.freq = 1; state.seed = 13371;
+    document.getElementById('c-torsion').value = 6;
+    document.getElementById('c-tension').value = 1;
+    document.getElementById('c-freq').value    = 1;
+    document.getElementById('c-seed').value    = 13371;
+    ['v-torsion','v-tension','v-freq'].forEach((id,i) => {
+      document.getElementById(id).textContent = ['6.0','1.00','1.00'][i];
+    });
+    document.getElementById('v-seed').textContent = '13371';
+    updateSeedDisplay();
+  }
+  // Torsion to 12 + Tension to 1.0 = resonance pole
+  if (e.key === 'z' || e.key === 'Z') {
+    state.torsion = 12; state.tension = 1.0;
+    document.getElementById('c-torsion').value = 12;
+    document.getElementById('c-tension').value = 1.0;
+    document.getElementById('v-torsion').textContent = '12.0';
+    document.getElementById('v-tension').textContent = '1.00';
+  }
+});
+</script>
+</body>
+</html>
