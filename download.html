@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SnapKitty — Download Center</title>
+<meta name="description" content="SnapKitty sovereign apps. Router, MyLaw, CARTO, Snap OS, KittyBrowse, BOB MCP."/>
+<style>
+:root{
+  --bg:#040408;--panel:#0a0a14;--border:#1e1e2a;
+  --text:#e8e8f0;--muted:#555;--dim:#2a2a3a;
+  --green:#00ff88;--gold:#ffd700;--blue:#0a84ff;
+  --purple:#bf5af2;--orange:#f97316;--red:#ff453a;
+  --mono:'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+
+/* ── TOPBAR ── */
+#top{background:var(--panel);border-bottom:1px solid var(--border);padding:0 20px;height:44px;display:flex;align-items:center;gap:12px;}
+.logo{color:var(--green);font-size:13px;font-weight:700;letter-spacing:.08em;}
+.topnav{display:flex;gap:4px;margin-left:auto;}
+.tn{font-size:10px;color:var(--muted);padding:4px 10px;border-radius:2px;cursor:pointer;letter-spacing:.05em;text-decoration:none;}
+.tn:hover{color:var(--text);background:var(--dim);}
+
+/* ── HERO ── */
+.hero{max-width:980px;margin:0 auto;padding:48px 24px 32px;}
+.hero-eyebrow{font-size:9px;color:var(--green);letter-spacing:.25em;margin-bottom:12px;}
+.hero-title{font-size:clamp(22px,4vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:10px;}
+.hero-title span{color:var(--green);}
+.hero-sub{color:var(--muted);font-size:12px;line-height:1.7;max-width:520px;margin-bottom:28px;}
+
+/* ── CATEGORY TABS ── */
+.cats{max-width:980px;margin:0 auto;padding:0 24px 20px;display:flex;gap:4px;flex-wrap:wrap;}
+.cat{background:var(--panel);border:1px solid var(--border);padding:5px 14px;border-radius:2px;font-size:10px;color:var(--muted);cursor:pointer;letter-spacing:.08em;}
+.cat:hover{color:var(--text);}
+.cat.active{border-color:var(--green);color:var(--green);}
+
+/* ── PRODUCT GRID ── */
+.grid{max-width:980px;margin:0 auto;padding:0 24px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border);}
+.card{background:var(--bg);padding:20px;display:flex;flex-direction:column;gap:12px;transition:background .15s;}
+.card:hover{background:var(--panel);}
+.card-header{display:flex;align-items:flex-start;gap:10px;}
+.card-icon{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.card-meta{flex:1;}
+.card-name{font-size:13px;font-weight:700;margin-bottom:2px;}
+.card-tagline{font-size:10px;color:var(--muted);line-height:1.4;}
+.badges{display:flex;gap:4px;flex-wrap:wrap;}
+.badge{font-size:8px;padding:2px 6px;border-radius:2px;letter-spacing:.08em;border:1px solid;}
+.badge.tier1{border-color:#00ff8833;color:var(--green);background:#00ff8808;}
+.badge.tier2{border-color:#0a84ff33;color:var(--blue);background:#0a84ff08;}
+.badge.tier3{border-color:#ffd70033;color:var(--gold);background:#ffd70008;}
+.badge.tier4{border-color:#55555533;color:var(--muted);}
+.badge.browser{border-color:#00ff8833;color:var(--green);}
+.badge.desktop{border-color:#0a84ff33;color:var(--blue);}
+.badge.mcp{border-color:#bf5af233;color:var(--purple);}
+.badge.service{border-color:#f9731633;color:var(--orange);}
+.badge.local{border-color:#ffd70033;color:var(--gold);}
+.badge.free{border-color:#00ff8833;color:var(--green);}
+.card-desc{font-size:11px;color:var(--muted);line-height:1.6;flex:1;}
+.card-stack{font-size:9px;color:var(--dim);letter-spacing:.05em;}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.btn{padding:5px 12px;font-size:10px;font-family:var(--mono);border-radius:2px;cursor:pointer;letter-spacing:.05em;text-decoration:none;display:inline-block;}
+.btn-primary{background:var(--green);color:#040408;border:none;font-weight:700;}
+.btn-primary:hover{background:#00d470;text-decoration:none;}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--text);border-color:var(--muted);}
+.btn-disabled{background:transparent;color:var(--dim);border:1px solid var(--dim);cursor:not-allowed;}
+
+/* ── FOOTER ── */
+footer{max-width:980px;margin:0 auto;padding:20px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.fl{font-size:9px;color:var(--dim);line-height:1.8;}
+.fr{display:flex;gap:12px;}
+.fr a{font-size:9px;color:var(--dim);}
+.fr a:hover{color:var(--text);}
+
+/* hide/show cards */
+.card[data-cat].hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div class="logo">⬡ SNAPKITTY</div>
+  <div class="topnav">
+    <a href="/" class="tn">HOME</a>
+    <a href="/router.html" class="tn">ROUTER</a>
+    <a href="/mylaw.html" class="tn">MYLAW</a>
+    <a href="https://github.com/SNAPKITTYWEST" target="_blank" class="tn">GITHUB ↗</a>
+    <a href="https://collectivekitty.com" target="_blank" class="tn">OS ↗</a>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-eyebrow">⬡ SNAPKITTY COLLECTIVE · SOVEREIGN COMPUTE · 2026</div>
+  <h1 class="hero-title">Download Center<br/><span>Apps built different.</span></h1>
+  <p class="hero-sub">Browser apps, desktop shells, MCP tools, and operator systems. Every one WORM-sealed, locally sovereign where possible, production-grade where it matters.</p>
+</div>
+
+<div class="cats">
+  <div class="cat active" onclick="filter('all')">ALL</div>
+  <div class="cat" onclick="filter('flagship')">FLAGSHIP APPS</div>
+  <div class="cat" onclick="filter('desktop')">DESKTOP SHELLS</div>
+  <div class="cat" onclick="filter('mcp')">TOOLING / MCP</div>
+  <div class="cat" onclick="filter('operator')">OPERATOR SYSTEMS</div>
+  <div class="cat" onclick="filter('platform')">PLATFORM</div>
+</div>
+
+<div class="grid">
+
+  <!-- SOVEREIGN ROUTER -->
+  <div class="card" data-cat="flagship">
+    <div class="card-header">
+      <div class="card-icon" style="background:#00ff8822">⬡</div>
+      <div class="card-meta">
+        <div class="card-name">Sovereign Router</div>
+        <div class="card-tagline">Universal AI workflow engine</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">BROWSER</span>
+      <span class="badge free">FREE</span>
+    </div>
+    <div class="card-desc">Every task routes to the right engine automatically. Claude for reasoning, DeepSeek R1 for math, Mistral for code, Nova for research. WORM-sealed.</div>
+    <div class="card-stack">TypeScript · AWS Bedrock · Mistral · DeepSeek R1</div>
+    <div class="card-actions">
+      <a href="/router.html" class="btn btn-primary">Open App</a>
+      <a href="https://github.com/SNAPKITTYWEST/SNAPKITTYWEST" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- MYLAW -->
+  <div class="card" data-cat="flagship">
+    <div class="card-header">
+      <div class="card-icon" style="background:#0a84ff22">⚖</div>
+      <div class="card-meta">
+        <div class="card-name">MyLaw</div>
+        <div class="card-tagline">Know your rights</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">BROWSER</span>
+      <span class="badge free">FREE</span>
+    </div>
+    <div class="card-desc">FDCPA · FCRA · ACH disputes · Trust deeds · IRS defense. Facebook 2009 UI. BOB as Messenger. Plain-English input. Real law sources.</div>
+    <div class="card-stack">Tau Prolog · DFA Engine · REXX Kernels · Cornell LII</div>
+    <div class="card-actions">
+      <a href="/mylaw.html" class="btn btn-primary">Open App</a>
+      <a href="https://github.com/SNAPKITTYWEST/cartographer-agent" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- CARTO ENGINE -->
+  <div class="card" data-cat="flagship">
+    <div class="card-header">
+      <div class="card-icon" style="background:#bf5af222">🗺</div>
+      <div class="card-meta">
+        <div class="card-name">CARTO Engine</div>
+        <div class="card-tagline">Sovereign law engine</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">BROWSER</span>
+      <span class="badge free">FREE</span>
+    </div>
+    <div class="card-desc">Full CARTO law engine with DFA scan, Prolog standing analysis, ACH/FCRA/TRUST/IRS kernels, Deed Forge, and WORM chain. Developer-facing.</div>
+    <div class="card-stack">ASP/Clingo · Prolog · REXX · COBOL · DFA</div>
+    <div class="card-actions">
+      <a href="/carto.html" class="btn btn-primary">Open App</a>
+      <a href="https://github.com/SNAPKITTYWEST/cartographer-agent" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- S-AUTOCODE -->
+  <div class="card" data-cat="flagship">
+    <div class="card-header">
+      <div class="card-icon" style="background:#ffd70022">◈</div>
+      <div class="card-meta">
+        <div class="card-name">S-AUTOCODE</div>
+        <div class="card-tagline">Sovereign browser IDE</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">BROWSER</span>
+    </div>
+    <div class="card-desc">Monaco editor, CODEX streaming responses, workspace persistence, JS/Python/HTML execution, S-expression output pane, bridge-ready architecture.</div>
+    <div class="card-stack">Monaco · Pyodide · Fireworks AI · Cloudflare Worker</div>
+    <div class="card-actions">
+      <a href="https://snapkittywest.github.io/S-AUTOCODE/" target="_blank" class="btn btn-primary">Open App</a>
+      <a href="https://github.com/SNAPKITTYWEST/S-AUTOCODE" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- KITTYBROWSE -->
+  <div class="card" data-cat="desktop">
+    <div class="card-header">
+      <div class="card-icon" style="background:#0a84ff22">🌐</div>
+      <div class="card-meta">
+        <div class="card-name">KittyBrowse</div>
+        <div class="card-tagline">Desktop browser for agents</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier2">TIER B — SHELL CANDIDATE</span>
+      <span class="badge desktop">ELECTRON</span>
+    </div>
+    <div class="card-desc">Electron browser shell. Each tab is an agent context. Each URL is a task pointer. Entropy scheduler (< 0.21 gate). NATS mesh. APL/Rust/WASM substrate.</div>
+    <div class="card-stack">Electron · TypeScript · Rust VM Bridge · NATS</div>
+    <div class="card-actions">
+      <a href="https://github.com/SNAPKITTYWEST/kittybrowse" target="_blank" class="btn btn-secondary">GitHub</a>
+      <span class="btn btn-disabled">Installer coming</span>
+    </div>
+  </div>
+
+  <!-- SNAP OS DASHBOARD -->
+  <div class="card" data-cat="desktop platform">
+    <div class="card-header">
+      <div class="card-icon" style="background:#f9731622">⚙</div>
+      <div class="card-meta">
+        <div class="card-name">SNAP OS</div>
+        <div class="card-tagline">Sovereign operating system</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier2">TIER B — SHELL CANDIDATE</span>
+      <span class="badge desktop">TAURI</span>
+    </div>
+    <div class="card-desc">Rust microkernel. SoulVM (Cranelift JIT). Bifrost WORM chain. Silverback capability system. EmojiScript dialect. 124 tests passing. APE COMPUTER Q4 2026.</div>
+    <div class="card-stack">Rust · Cranelift JIT · Lean 4 · Prolog · Ed25519</div>
+    <div class="card-actions">
+      <a href="https://github.com/SNAPKITTYWEST/snap-os" target="_blank" class="btn btn-secondary">GitHub</a>
+      <span class="btn btn-disabled">Q4 2026</span>
+    </div>
+  </div>
+
+  <!-- BOB MCP -->
+  <div class="card" data-cat="mcp">
+    <div class="card-header">
+      <div class="card-icon" style="background:#00ff8822">⬡</div>
+      <div class="card-meta">
+        <div class="card-name">BOB MCP</div>
+        <div class="card-tagline">Sovereign MCP server</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier3">TIER C — TOOLING</span>
+      <span class="badge mcp">MCP / CLI</span>
+      <span class="badge free">npm</span>
+    </div>
+    <div class="card-desc">6 MCP tools: WORM seal, agent build, Ada contract generate, twin chat, sovereign inject (Lean4 + Mamba SSM). Works with Claude Desktop and VS Code.</div>
+    <div class="card-stack">Node.js · MCP SDK · Ed25519 · Ollama</div>
+    <div class="card-actions">
+      <a href="https://www.npmjs.com/package/@snapkitty/mcp-server" target="_blank" class="btn btn-primary">npm install</a>
+      <a href="https://github.com/SNAPKITTYWEST/snapkitty-mcp" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- SNAPKITTY AGENTOS -->
+  <div class="card" data-cat="mcp">
+    <div class="card-header">
+      <div class="card-icon" style="background:#bf5af222">⚡</div>
+      <div class="card-meta">
+        <div class="card-name">SnapKitty Agent OS</div>
+        <div class="card-tagline">Agent substrate</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier3">TIER C — TOOLING</span>
+      <span class="badge mcp">CLI / RUNTIME</span>
+    </div>
+    <div class="card-desc">P/NP swarm engine. GitBucket memory. Skill loader. WORM-sealed bucket store. Ed25519 signing. Context compiler. AGENTS.md canonical spec.</div>
+    <div class="card-stack">TypeScript · Rust WASM · Node.js · Ed25519</div>
+    <div class="card-actions">
+      <a href="https://github.com/SNAPKITTYWEST/snapkitty-agentos" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- COLLECTIVEKITTY OS -->
+  <div class="card" data-cat="operator">
+    <div class="card-header">
+      <div class="card-icon" style="background:#ffd70022">👑</div>
+      <div class="card-meta">
+        <div class="card-name">CollectiveKitty OS</div>
+        <div class="card-tagline">Live sovereign OS</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier4">TIER D — SERVICE</span>
+      <span class="badge service">SELF-HOSTED</span>
+    </div>
+    <div class="card-desc">31 agents. TREBIT triple-entry accounting. 5-tier fundability FSM. Bifrost 8-stage pipeline. Discord terminal. FORGEART NFTs on Base L2. Live at collectivekitty.com.</div>
+    <div class="card-stack">Next.js · Rust · Python · WORM Chain · Base L2</div>
+    <div class="card-actions">
+      <a href="https://collectivekitty.com" target="_blank" class="btn btn-primary">Open OS</a>
+      <a href="https://github.com/SNAPKITTYWEST/DEVFLOW-FINANCE" target="_blank" class="btn btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <!-- MATHLIB5 -->
+  <div class="card" data-cat="platform">
+    <div class="card-header">
+      <div class="card-icon" style="background:#f9731622">∑</div>
+      <div class="card-meta">
+        <div class="card-name">MATHLIB5</div>
+        <div class="card-tagline">Faster formal proof engine</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">OPEN CONTRIBUTIONS</span>
+      <span class="badge free">CLA REQUIRED</span>
+    </div>
+    <div class="card-desc">C kernel + Lean 4 FFI. Bypasses elaboration bottleneck. sorryhunter closes open sorrys automatically. 6 math skill layers. PRs welcome — only repo with open contributions.</div>
+    <div class="card-stack">Lean 4 · Rust · Haskell · APL · Fortran · AXIOM</div>
+    <div class="card-actions">
+      <a href="https://github.com/SNAPKITTYWEST/mathlib5" target="_blank" class="btn btn-primary">Contribute</a>
+    </div>
+  </div>
+
+  <!-- SEIT -->
+  <div class="card" data-cat="platform">
+    <div class="card-header">
+      <div class="card-icon" style="background:#00ff8822">🏛</div>
+      <div class="card-meta">
+        <div class="card-name">SEIT</div>
+        <div class="card-tagline">Sovereign AI certification</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge tier1">TIER A — LIVE</span>
+      <span class="badge browser">STANDARD</span>
+    </div>
+    <div class="card-desc">Saint Errant Digital Institute of Technology. EIN 42-2652897. World's first sovereign AI certification body. SAP v1.0 published. UN-NGO ECOSOC pathway 2028.</div>
+    <div class="card-stack">SAP v1.0 · SACM · 10 Axioms · Ed25519</div>
+    <div class="card-actions">
+      <a href="https://github.com/SNAPKITTYWEST/seit-institute" target="_blank" class="btn btn-secondary">Standard</a>
+      <a href="https://collectivekitty.com/saint-errant" target="_blank" class="btn btn-secondary">Certify</a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="fl">SnapKitty Collective LLC · EIN 41-5105572<br/>Bel Esprit D'Accord Trust · EIN 41-6630640<br/>Sovereign Source License v3.0 · 2026</div>
+  <div class="fr">
+    <a href="https://github.com/SNAPKITTYWEST">GitHub</a>
+    <a href="/router.html">Router</a>
+    <a href="https://collectivekitty.com">CollectiveKitty</a>
+  </div>
+</footer>
+
+<script>
+function filter(cat) {
+  document.querySelectorAll('.cat').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.card[data-cat]').forEach(card => {
+    if (cat === 'all' || card.dataset.cat.split(' ').includes(cat)) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+}
+</script>
+</body>
+</html>
