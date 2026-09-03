@@ -1,0 +1,86 @@
+# SnapKitty Collective
+
+> Sovereign AI infrastructure. Models, agents, formal proofs, GPU kernels, and open research — built to be inspected, verified, and run independently.
+
+## What This Is
+
+SnapKitty is a 130+ repository ecosystem for building sovereign AI systems. Every decision is WORM-sealed (append-only SHA-256 audit chain). Every proof compiles with zero sorry terms. Everything runs local on consumer hardware.
+
+## Organization
+
+- GitHub: https://github.com/SNAPKITTYWEST
+- Hugging Face: https://huggingface.co/Snapkitty
+- Website: https://collectivekitty.com
+
+## Core Areas
+
+### Sovereign Models
+Small, local-first language models. Nemotron Mini 4.2B fine-tunes, 4B reward models, deterministic routing tensors, GGUF exports for Ollama.
+- sovereign-mimo-4b: 4B param code reward model pruned from MiMo-7B
+- sovereign-qra: Deterministic routing tensor replacing softmax (Lean 4 zero-sorry)
+- snapkitty-merged: Nemotron Mini 4.2B GGUF (Q4_K_M)
+- hilbert: CUDA kernels (RMSNorm, FlashAttn, SwiGLU, RoPE) for Ampere GPUs
+
+### Agent Systems
+Multi-agent orchestration with formal verification gates.
+- bob-engine: Haskell + quantum monad + Watson + Mamba SSM + Prolog kernel
+- sovereign-agent-kernel: 6502 bare-metal, Forth runtime, SHA-512
+- sovereign-agi-kernel: Idris 2 dependent types, entropy bounds as types
+- agentscope-sift: Security Intelligence and Forensic Triage
+
+### Formal Verification
+Zero-sorry Lean 4 theorems, Agda formalizations, cross-language verification.
+- sov-kernel-monster: Sovereign method repository, proofs and specs
+- ahmad-foundations: NLBHE, E7 lattice, F4 algebra, 30+ zero-sorry theorems
+- sovereign-entropy-theorem: Hallucination elimination (H < 0.20 nats)
+- j-matrix-twin: 79 Jacobian theorems with interactive playground
+
+### Quantum Computing
+Topological quantum computing, Fibonacci anyons, lattice surgery.
+- topological-quantum-computer: Fibonacci-anyon TQC with Lean 4 proofs
+- quantum-kernel: TDA-to-braid-to-lattice surgery for heavy-hex hardware
+- black-hole-engine: Hawking temperature, ISCO, photon sphere proofs
+
+### GPU Kernels and Hardware
+CUDA, bare-metal processors, space flight computers.
+- hilbert: CUDA kernels for Ampere GPUs
+- sovereign-ada-rtx: Complete processor in pure Ada, 21 packages
+- sovereign-agc: Apollo Guidance Computer in 7 languages
+- sovereign-hypervisor-sdk: ARM64 EL2 hypervisor API
+
+### Compilers and Runtimes
+From LISP machines to Apple II to sovereign WASM sandboxes.
+- sovereign-compiler: Root Fontana constitutional compiler (Rust + Lean 4)
+- sovereign-emulator: VM for governed agents with constitution engine
+- apple-ii-universal-machine: Apple II with sovereign overlay
+- snapkitty-clojure-lisp-bridge: LISP machine with EmojiScript bytecode
+
+### Security and Cryptography
+Ed25519 + Blake3 + SHA-256. WORM audit chains. Hardware attestation.
+- sovereign-attestation-protocol: TPM 2.0, SGX, TrustZone
+- vault-live: SAML 2.0 with NAND-gated assertion validation
+- woz-vault: Ed25519 hardware key vault
+- marlborg-worm: Append-only SHA-256 audit trail
+
+### Datasets
+- sovereign-training-corpus: 882 curated prompt/completion pairs from WORM-sealed execution
+- cartographer-corpus: 67 domain-specific examples across 9 chapters
+- worm-chain-archive: 39 MB of cryptographically sealed execution records
+- sovereign-papers: 25 LaTeX research papers
+
+### Research
+- sovereign-tournament: Formal math tournament, 8 published papers
+- snapkitty-papers: Architecture, PIRTM, octonions, EmojiScript, Goldilocks
+
+## Key Properties
+
+- Zero sorry terms: All Lean 4 proofs compile without axiom admits
+- WORM sealed: Append-only SHA-256 chains on every agent decision
+- Local first: Everything runs on consumer GPUs (RTX 3080)
+- 20+ languages: Lean 4, Agda, Ada, Haskell, Fortran, Prolog, 6502 ASM, OCaml, Idris 2, Rust, CUDA, and more
+- Formally verified: Proofs from algebra to hardware
+
+## Contact
+
+- Owner: Jessica L. Williams / SNAPKITTYWEST
+- Trust: Bel Esprit D'Accord Irrevocable Trust
